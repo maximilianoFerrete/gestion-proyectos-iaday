@@ -491,6 +491,3 @@ appsettings.*.local.json
 node_modules/
 frontend/dist/
 frontend/.angular/
-
-# Configuración local de agentes (no se versiona)
-.claude/
