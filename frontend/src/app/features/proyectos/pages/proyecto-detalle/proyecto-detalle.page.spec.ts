@@ -25,6 +25,7 @@ const PROYECTO: ProyectoDto = {
   archivadoPor: null,
   estadoAlArchivar: null,
   cantidadAgrupaciones: 1,
+  cantidadIncidencias: 0,
   fechaCreacion: '2026-10-09T13:05:00Z',
   fechaModificacion: null,
 };
@@ -43,6 +44,7 @@ const AGRUPACION: AgrupacionDto = {
   proyectoId: 3,
   nombre: 'Módulo pagos',
   descripcion: 'Incidencias del circuito de pagos.',
+  cantidadIncidencias: 0,
   fechaCreacion: '2026-10-09T13:10:00Z',
   fechaModificacion: null,
 };

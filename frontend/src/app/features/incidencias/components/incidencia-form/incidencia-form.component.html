@@ -1,0 +1,274 @@
+<form class="formulario" [formGroup]="form" (ngSubmit)="enviar()" novalidate>
+  @if (erroresGenerales().length > 0) {
+    <div class="alerta alerta-error" role="alert">
+      @for (mensaje of erroresGenerales(); track $index) {
+        <p>{{ mensaje }}</p>
+      }
+    </div>
+  }
+
+  @if (esEdicion() && incidencia(); as datos) {
+    <div class="fila-campos">
+      <div class="campo">
+        <label for="incidencia-codigo">Código</label>
+        <input id="incidencia-codigo" type="text" [value]="datos.codigo" readonly />
+      </div>
+      <div class="campo">
+        <label for="incidencia-tipo-lectura">Tipo</label>
+        <input
+          id="incidencia-tipo-lectura"
+          type="text"
+          [value]="datos.tipo.nombre"
+          readonly
+          aria-describedby="incidencia-tipo-lectura-ayuda"
+        />
+        <small id="incidencia-tipo-lectura-ayuda" class="ayuda">
+          El tipo se cambia desde el detalle ("Cambiar tipo").
+        </small>
+      </div>
+    </div>
+  }
+
+  <fieldset class="campo">
+    <legend>Padre</legend>
+    @if (padre(); as p) {
+      <div class="padre-seleccionado">
+        <span>
+          <strong>{{ p.codigo }}</strong> – {{ p.titulo }}
+          <span class="texto-secundario">({{ p.tipo.nombre }})</span>
+        </span>
+        <button type="button" class="btn btn-chico" (click)="seleccionarPadre(null)">
+          Quitar padre (sin padre)
+        </button>
+      </div>
+      <p class="ayuda">
+        Vencimiento del padre: {{ fecha(p.fechaVencimiento) }} · Agrupación del padre:
+        {{ p.agrupacion?.nombre ?? 'Sin agrupación' }}
+      </p>
+    } @else {
+      <p class="texto-secundario">Sin padre</p>
+    }
+
+    @if (sinPadresPosibles()) {
+      <p class="ayuda">
+        El tipo de esta incidencia no admite un padre según las relaciones configuradas.
+      </p>
+    } @else {
+      <label for="incidencia-buscar-padre">
+        {{ padre() ? 'Cambiar padre' : 'Buscar padre' }} (código o título)
+      </label>
+      <input
+        id="incidencia-buscar-padre"
+        type="search"
+        [formControl]="busquedaPadre"
+        autocomplete="off"
+        aria-describedby="incidencia-padre-error"
+        aria-controls="incidencia-resultados-padre"
+      />
+      @if (buscandoPadre()) {
+        <p class="texto-secundario" aria-live="polite">Buscando...</p>
+      } @else if (busquedaPadre.value.trim().length > 0) {
+        @if (candidatos().length === 0) {
+          <p class="texto-secundario" aria-live="polite">No hay incidencias que coincidan.</p>
+        } @else {
+          <ul
+            id="incidencia-resultados-padre"
+            class="resultados-busqueda"
+            aria-label="Candidatos a padre"
+          >
+            @for (candidato of candidatos(); track candidato.id) {
+              <li>
+                <button type="button" (click)="elegirCandidato(candidato)">
+                  <strong>{{ candidato.codigo }}</strong> – {{ candidato.titulo }}
+                  <span class="texto-secundario">({{ candidato.tipo.nombre }})</span>
+                </button>
+              </li>
+            }
+          </ul>
+        }
+      }
+    }
+    <app-campo-error [mensajes]="errores('padreId', 'El padre')" idError="incidencia-padre-error" />
+    @if (avisoCambioPadre(); as aviso) {
+      <p class="aviso" role="status">{{ aviso }}</p>
+    }
+  </fieldset>
+
+  @if (!esEdicion()) {
+    <div class="campo">
+      <label for="incidencia-tipo">Tipo <span aria-hidden="true">*</span></label>
+      <select
+        id="incidencia-tipo"
+        formControlName="tipoId"
+        required
+        [attr.aria-invalid]="errores('tipoId', 'El tipo').length > 0"
+        aria-describedby="incidencia-tipo-error"
+      >
+        <option [ngValue]="null" disabled>Seleccioná un tipo</option>
+        @for (opcion of opcionesTipo(); track opcion.valor) {
+          <option [ngValue]="opcion.valor">{{ opcion.etiqueta }}</option>
+        }
+      </select>
+      @if (padre() && opcionesTipo().length === 0) {
+        <small class="ayuda">El tipo del padre no admite incidencias hijas.</small>
+      }
+      <app-campo-error [mensajes]="errores('tipoId', 'El tipo')" idError="incidencia-tipo-error" />
+    </div>
+  }
+
+  <div class="campo">
+    <label for="incidencia-titulo">Título <span aria-hidden="true">*</span></label>
+    <input
+      id="incidencia-titulo"
+      type="text"
+      formControlName="titulo"
+      required
+      [attr.aria-invalid]="errores('titulo', 'El título').length > 0"
+      aria-describedby="incidencia-titulo-error"
+    />
+    <app-campo-error
+      [mensajes]="errores('titulo', 'El título')"
+      idError="incidencia-titulo-error"
+    />
+  </div>
+
+  <div class="campo">
+    <label for="incidencia-descripcion">Descripción <span aria-hidden="true">*</span></label>
+    <textarea
+      id="incidencia-descripcion"
+      rows="6"
+      formControlName="descripcion"
+      required
+      [attr.aria-invalid]="errores('descripcion', 'La descripción').length > 0"
+      aria-describedby="incidencia-descripcion-contador incidencia-descripcion-error"
+    ></textarea>
+    <small id="incidencia-descripcion-contador" class="contador">
+      {{ form.controls.descripcion.value.length }} / {{ limites.descripcionMax }}
+    </small>
+    <app-campo-error
+      [mensajes]="errores('descripcion', 'La descripción')"
+      idError="incidencia-descripcion-error"
+    />
+  </div>
+
+  @if (esEdicion()) {
+    <div class="campo">
+      <label for="incidencia-estado">Estado <span aria-hidden="true">*</span></label>
+      <select
+        id="incidencia-estado"
+        formControlName="estadoId"
+        required
+        [attr.aria-invalid]="errores('estadoId', 'El estado').length > 0"
+        aria-describedby="incidencia-estado-error"
+      >
+        @for (opcion of opcionesEstado(); track opcion.valor) {
+          <option [ngValue]="opcion.valor">{{ opcion.etiqueta }}</option>
+        }
+      </select>
+      <app-campo-error
+        [mensajes]="errores('estadoId', 'El estado')"
+        idError="incidencia-estado-error"
+      />
+    </div>
+  }
+
+  <div class="fila-campos">
+    <div class="campo">
+      <label for="incidencia-prioridad">Prioridad <span aria-hidden="true">*</span></label>
+      <select
+        id="incidencia-prioridad"
+        formControlName="prioridadId"
+        required
+        [attr.aria-invalid]="errores('prioridadId', 'La prioridad').length > 0"
+        aria-describedby="incidencia-prioridad-error"
+      >
+        <option [ngValue]="null" disabled>Seleccioná una prioridad</option>
+        @for (opcion of opcionesPrioridad(); track opcion.valor) {
+          <option [ngValue]="opcion.valor">{{ opcion.etiqueta }}</option>
+        }
+      </select>
+      <app-campo-error
+        [mensajes]="errores('prioridadId', 'La prioridad')"
+        idError="incidencia-prioridad-error"
+      />
+    </div>
+
+    <div class="campo">
+      <label for="incidencia-responsable">Responsable</label>
+      <select
+        id="incidencia-responsable"
+        formControlName="responsableId"
+        [attr.aria-invalid]="errores('responsableId', 'El responsable').length > 0"
+        aria-describedby="incidencia-responsable-error"
+      >
+        <option [ngValue]="null">Sin responsable</option>
+        @for (opcion of opcionesResponsable(); track opcion.valor) {
+          <option [ngValue]="opcion.valor">{{ opcion.etiqueta }}</option>
+        }
+      </select>
+      <app-campo-error
+        [mensajes]="errores('responsableId', 'El responsable')"
+        idError="incidencia-responsable-error"
+      />
+    </div>
+
+    <div class="campo">
+      <label for="incidencia-vencimiento">Fecha de vencimiento</label>
+      <input
+        id="incidencia-vencimiento"
+        type="date"
+        formControlName="fechaVencimiento"
+        [attr.aria-invalid]="erroresVencimiento().length > 0"
+        aria-describedby="incidencia-vencimiento-error"
+      />
+      <app-campo-error [mensajes]="erroresVencimiento()" idError="incidencia-vencimiento-error" />
+      <app-incidencias-afectadas
+        [proyectoId]="proyectoId()"
+        [codigos]="incidenciasAfectadas()"
+        [conocidas]="incidencia()?.hijas ?? []"
+      />
+    </div>
+  </div>
+
+  <div class="campo">
+    <label for="incidencia-agrupacion">Agrupación</label>
+    <select
+      id="incidencia-agrupacion"
+      formControlName="agrupacionId"
+      [attr.aria-invalid]="errores('agrupacionId', 'La agrupación').length > 0"
+      aria-describedby="incidencia-agrupacion-ayuda incidencia-agrupacion-error"
+    >
+      <option [ngValue]="null">Sin agrupación</option>
+      @for (agrupacion of agrupaciones(); track agrupacion.id) {
+        <option [ngValue]="agrupacion.id">{{ agrupacion.nombre }}</option>
+      }
+    </select>
+    @if (padre()) {
+      <small id="incidencia-agrupacion-ayuda" class="ayuda">Se hereda del padre</small>
+    }
+    <app-campo-error
+      [mensajes]="errores('agrupacionId', 'La agrupación')"
+      idError="incidencia-agrupacion-error"
+    />
+    @if (avisoAgrupacion()) {
+      <p class="aviso" role="status">Se aplicará también a todas sus incidencias descendientes.</p>
+    }
+  </div>
+
+  @if (!esEdicion()) {
+    <p class="ayuda">
+      @if (nombreEstadoInicial(); as estadoInicial) {
+        Se creará en estado {{ estadoInicial }}
+      } @else {
+        Se creará en el estado inicial del flujo del tipo elegido.
+      }
+    </p>
+  }
+
+  <div class="acciones">
+    <button type="button" class="btn" (click)="cancelar.emit()">Cancelar</button>
+    <button type="submit" class="btn btn-primario" [disabled]="form.invalid || enviando()">
+      {{ enviando() ? 'Guardando...' : 'Guardar' }}
+    </button>
+  </div>
+</form>

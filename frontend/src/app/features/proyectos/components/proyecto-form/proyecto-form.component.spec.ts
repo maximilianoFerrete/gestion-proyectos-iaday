@@ -57,6 +57,7 @@ const PROYECTO: ProyectoDto = {
   archivadoPor: null,
   estadoAlArchivar: null,
   cantidadAgrupaciones: 0,
+  cantidadIncidencias: 0,
   fechaCreacion: '2026-10-09T13:05:00Z',
   fechaModificacion: null,
 };

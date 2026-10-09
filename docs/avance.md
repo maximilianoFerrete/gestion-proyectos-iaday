@@ -3,3 +3,4 @@
 | RF | Análisis | BD | Backend | Frontend | Tests | Estado |
 |---|---|---|---|---|---|---|
 | RF-001 Proyectos y agrupaciones | ✅ | ✅ | ✅ | ✅ | ✅ 418/418 | ✅ terminado |
+| RF-002 Incidencias y jerarquía | ✅ | ✅ | ✅ | ✅ | ⏳ | 🔄 prueba manual del usuario antes de tests |

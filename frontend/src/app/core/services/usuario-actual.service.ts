@@ -3,6 +3,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { ALMACENAMIENTO } from '../config/almacenamiento.token';
 import { API_URL } from '../config/api-url.token';
 import { esErrorApi } from '../models/error-api.model';
+import { Permiso } from '../models/permisos.model';
 import { USUARIO_ANONIMO, UsuarioActualDto } from '../models/usuario-actual.model';
 import { PersonaDto } from '../../features/personas/models/persona.model';
 import { PersonasService } from '../../features/personas/services/personas.service';
@@ -16,11 +17,11 @@ export const MENSAJE_USUARIO_INVALIDO = 'El usuario seleccionado ya no es válid
 
 /**
  * Usuario actual provisional (DA-04): guarda el id elegido en localStorage, lo valida con
- * `GET /api/usuario-actual` y expone el rol para ocultar acciones de administrador.
+ * `GET /api/usuario-actual` y expone el rol y los permisos para ocultar acciones.
  * El header `X-Usuario-Id` lo agrega `usuarioActualInterceptor`.
  *
  * Creado: 2026-10-09
- * Modificado: 2026-10-09 - Creación inicial (RF-001)
+ * Modificado: 2026-10-09 - Agrega `permisos` y `tienePermiso` (RF-002)
  */
 @Injectable({ providedIn: 'root' })
 export class UsuarioActualService {
@@ -42,6 +43,15 @@ export class UsuarioActualService {
   readonly personasSeleccionables = this.personasActivas.asReadonly();
   /** Indica si el usuario actual es administrador (solo para mostrar/ocultar acciones). */
   readonly esAdmin = computed(() => this.usuarioVerificado().esAdmin);
+  /** Permisos del usuario actual (RF-002 0.1); tolera respuestas sin `permisos`. */
+  readonly permisos = computed<ReadonlySet<string>>(
+    () => new Set(this.usuarioVerificado().permisos ?? []),
+  );
+
+  /** Indica si el usuario tiene el permiso (reactivo: lee el signal `permisos`). */
+  tienePermiso(permiso: Permiso): boolean {
+    return this.permisos().has(permiso);
+  }
 
   /** Verifica la selección guardada y carga las personas del selector. */
   inicializar(): void {

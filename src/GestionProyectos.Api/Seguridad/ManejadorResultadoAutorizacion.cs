@@ -1,6 +1,7 @@
 using GestionProyectos.Api.Errores;
 using GestionProyectos.Domain.Excepciones;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization.Infrastructure;
 using Microsoft.AspNetCore.Authorization.Policy;
 
 namespace GestionProyectos.Api.Seguridad;
@@ -11,6 +12,7 @@ namespace GestionProyectos.Api.Seguridad;
 /// <remarks>
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (RF-001)
+/// Modificado: 2026-10-09 - Mensaje del 403 según el permiso exigido por la política (RF-002, 0.1)
 /// </remarks>
 public sealed class ManejadorResultadoAutorizacion(EscritorProblemas escritor)
     : IAuthorizationMiddlewareResultHandler
@@ -34,9 +36,22 @@ public sealed class ManejadorResultadoAutorizacion(EscritorProblemas escritor)
         if (authorizeResult.Forbidden)
         {
             return escritor.EscribirAsync(context, StatusCodes.Status403Forbidden,
-                CodigosError.PermisoDenegado, "La operación requiere un usuario administrador.");
+                CodigosError.PermisoDenegado, MensajePermisoDenegado(policy));
         }
 
         return _porDefecto.HandleAsync(next, context, policy, authorizeResult);
+    }
+
+    /// <summary>Mensaje del 403: menciona el permiso si la política exige el claim "permiso".</summary>
+    public static string MensajePermisoDenegado(AuthorizationPolicy? policy)
+    {
+        var permiso = policy?.Requirements
+            .OfType<ClaimsAuthorizationRequirement>()
+            .Where(r => r.ClaimType == EsquemaProvisional.ClaimPermiso)
+            .SelectMany(r => r.AllowedValues ?? [])
+            .FirstOrDefault();
+        return permiso is null
+            ? new PermisoDenegadoException().Message
+            : new PermisoDenegadoException(permiso).Message;
     }
 }

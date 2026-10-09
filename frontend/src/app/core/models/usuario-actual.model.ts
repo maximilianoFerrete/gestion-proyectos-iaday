@@ -1,8 +1,8 @@
 /**
- * Respuesta de `GET /api/usuario-actual` (spec 0.4).
+ * Respuesta de `GET /api/usuario-actual` (RF-001 spec 0.4; RF-002 spec 0.1 agrega `permisos`).
  *
  * Creado: 2026-10-09
- * Modificado: 2026-10-09 - Creación inicial (RF-001)
+ * Modificado: 2026-10-09 - Agrega `permisos` (RF-002)
  */
 export interface UsuarioActualDto {
   readonly identificado: boolean;
@@ -10,6 +10,8 @@ export interface UsuarioActualDto {
   readonly nombre: string | null;
   readonly email: string | null;
   readonly esAdmin: boolean;
+  /** Permisos del usuario (vacío si es anónimo o no tiene ninguno). */
+  readonly permisos: readonly string[];
 }
 
 /** Usuario anónimo (sin `X-Usuario-Id`). */
@@ -19,4 +21,5 @@ export const USUARIO_ANONIMO: UsuarioActualDto = {
   nombre: null,
   email: null,
   esAdmin: false,
+  permisos: [],
 };

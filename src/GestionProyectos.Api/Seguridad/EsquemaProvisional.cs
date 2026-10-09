@@ -6,6 +6,7 @@ namespace GestionProyectos.Api.Seguridad;
 /// <remarks>
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (RF-001)
+/// Modificado: 2026-10-09 - Agrega el claim de permisos (RF-002, 0.1)
 /// </remarks>
 public static class EsquemaProvisional
 {
@@ -32,6 +33,9 @@ public static class EsquemaProvisional
 
     /// <summary>Tipo de claim de los roles.</summary>
     public const string ClaimRol = "role";
+
+    /// <summary>Tipo de claim de cada permiso del usuario (RF-002, 0.1).</summary>
+    public const string ClaimPermiso = "permiso";
 }
 
 /// <summary>

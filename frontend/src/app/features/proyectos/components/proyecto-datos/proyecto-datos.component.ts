@@ -7,7 +7,7 @@ import { ProyectoDto } from '../../models/proyecto.model';
  * Datos de un proyecto (P3) y banner de solo lectura cuando está archivado.
  *
  * Creado: 2026-10-09
- * Modificado: 2026-10-09 - Creación inicial (RF-001)
+ * Modificado: 2026-10-09 - Total de incidencias (RF-002)
  */
 @Component({
   selector: 'app-proyecto-datos',
@@ -56,6 +56,10 @@ import { ProyectoDto } from '../../models/proyecto.model';
       <div>
         <dt>Fecha objetivo</dt>
         <dd>{{ p.fechaObjetivo | date: 'dd/MM/yyyy' }}</dd>
+      </div>
+      <div>
+        <dt>Incidencias</dt>
+        <dd>{{ p.cantidadIncidencias }}</dd>
       </div>
       <div>
         <dt>Fecha de creación</dt>

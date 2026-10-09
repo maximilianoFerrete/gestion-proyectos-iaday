@@ -2,7 +2,7 @@
  * Modelos de Agrupaciones según el contrato API de RF-001.
  *
  * Creado: 2026-10-09
- * Modificado: 2026-10-09 - Creación inicial (RF-001)
+ * Modificado: 2026-10-09 - `cantidadIncidencias` (RF-002)
  */
 
 /** `AgrupacionDto` devuelto por `/api/proyectos/{proyectoId}/agrupaciones`. */
@@ -11,6 +11,8 @@ export interface AgrupacionDto {
   readonly proyectoId: number;
   readonly nombre: string;
   readonly descripcion: string;
+  /** Cantidad de incidencias asociadas (RF-002). */
+  readonly cantidadIncidencias: number;
   readonly fechaCreacion: string;
   readonly fechaModificacion: string | null;
 }

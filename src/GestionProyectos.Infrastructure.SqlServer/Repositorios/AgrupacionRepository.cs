@@ -10,6 +10,7 @@ namespace GestionProyectos.Infrastructure.SqlServer.Repositorios;
 /// <remarks>
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (RF-001)
+/// Modificado: 2026-10-09 - Conteo de incidencias por agrupación (RF-002)
 /// </remarks>
 internal sealed class AgrupacionRepository(EjecutorSql sql) : IAgrupacionRepository
 {
@@ -45,6 +46,26 @@ internal sealed class AgrupacionRepository(EjecutorSql sql) : IAgrupacionReposit
             """;
         return sql.ConsultarUnoAsync<bool>(consulta,
             new { ProyectoId = proyectoId, Nombre = nombre, ExcluirId = excluirId }, ct);
+    }
+
+    /// <inheritdoc />
+    public Task<int> ContarIncidenciasAsync(int id, CancellationToken ct) =>
+        sql.ConsultarUnoAsync<int>("SELECT COUNT(*) FROM dbo.Incidencias WHERE AgrupacionId = @Id;",
+            new { Id = id }, ct);
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyDictionary<int, int>> ContarIncidenciasPorAgrupacionAsync(int proyectoId,
+        CancellationToken ct)
+    {
+        const string consulta = """
+            SELECT AgrupacionId, COUNT(*) AS Cantidad
+            FROM dbo.Incidencias
+            WHERE ProyectoId = @ProyectoId AND AgrupacionId IS NOT NULL
+            GROUP BY AgrupacionId;
+            """;
+        var filas = await sql.ConsultarAsync<(int AgrupacionId, int Cantidad)>(consulta,
+            new { ProyectoId = proyectoId }, ct);
+        return filas.ToDictionary(f => f.AgrupacionId, f => f.Cantidad);
     }
 
     /// <inheritdoc />

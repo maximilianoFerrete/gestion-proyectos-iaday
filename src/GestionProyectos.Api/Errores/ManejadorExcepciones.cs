@@ -11,6 +11,7 @@ namespace GestionProyectos.Api.Errores;
 /// <remarks>
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (RF-001)
+/// Modificado: 2026-10-09 - Incluye las extensiones de la excepción (RF-002, 0.2)
 /// </remarks>
 public sealed class ManejadorExcepciones(
     FabricaProblemas fabrica,
@@ -49,7 +50,7 @@ public sealed class ManejadorExcepciones(
     {
         ValidationException validacion => fabrica.CrearValidacion(contexto,
             validacion.Errors.Select(e => new KeyValuePair<string, string>(e.PropertyName, e.ErrorMessage))),
-        ExcepcionDominio negocio => fabrica.Crear(contexto, StatusPara(negocio), negocio.Codigo, negocio.Message),
+        ExcepcionDominio negocio => fabrica.Crear(contexto, StatusPara(negocio), negocio),
         _ => fabrica.Crear(contexto, StatusCodes.Status500InternalServerError, CodigosError.ErrorInterno,
             DetalleErrorInterno),
     };

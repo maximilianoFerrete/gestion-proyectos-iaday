@@ -1,8 +1,16 @@
 using FluentValidation;
+using GestionProyectos.Application.Abstracciones;
 using GestionProyectos.Application.Agrupaciones;
+using GestionProyectos.Application.EstadosIncidencia;
 using GestionProyectos.Application.EstadosProyecto;
+using GestionProyectos.Application.FlujosIncidencia;
+using GestionProyectos.Application.Incidencias;
+using GestionProyectos.Application.NivelesIncidencia;
 using GestionProyectos.Application.Personas;
+using GestionProyectos.Application.PrioridadesIncidencia;
 using GestionProyectos.Application.Proyectos;
+using GestionProyectos.Application.RelacionesTiposIncidencia;
+using GestionProyectos.Application.TiposIncidencia;
 using GestionProyectos.Application.UsuarioActual;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -15,6 +23,7 @@ namespace GestionProyectos.Application;
 /// <remarks>
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (RF-001)
+/// Modificado: 2026-10-09 - Registra permisos, configuración e incidencias (RF-002)
 /// </remarks>
 public static class DependencyInjection
 {
@@ -27,12 +36,25 @@ public static class DependencyInjection
         services.AddValidatorsFromAssemblyContaining<PersonaRequestValidator>(includeInternalTypes: false);
 
         services.AddScoped<ProyectoValidadores>();
+        services.TryAddSingleton<IResolutorPermisos, ResolutorPermisosPorAdministrador>();
         services.AddScoped<IUsuarioActualService, UsuarioActualService>();
         services.AddScoped<IIdentificacionUsuarioService, IdentificacionUsuarioService>();
         services.AddScoped<IPersonaService, PersonaService>();
         services.AddScoped<IEstadoProyectoService, EstadoProyectoService>();
         services.AddScoped<IProyectoService, ProyectoService>();
         services.AddScoped<IAgrupacionService, AgrupacionService>();
+
+        services.AddScoped<TipoIncidenciaValidadores>();
+        services.AddScoped<IncidenciaValidadores>();
+        services.AddScoped<INivelIncidenciaService, NivelIncidenciaService>();
+        services.AddScoped<ITipoIncidenciaService, TipoIncidenciaService>();
+        services.AddScoped<IRelacionTipoIncidenciaService, RelacionTipoIncidenciaService>();
+        services.AddScoped<IEstadoIncidenciaService, EstadoIncidenciaService>();
+        services.AddScoped<IFlujoIncidenciaService, FlujoIncidenciaService>();
+        services.AddScoped<IPrioridadIncidenciaService, PrioridadIncidenciaService>();
+        services.AddScoped<IReferenciasIncidencia, ReferenciasIncidencia>();
+        services.AddScoped<IIncidenciaConsultaService, IncidenciaConsultaService>();
+        services.AddScoped<IIncidenciaService, IncidenciaService>();
         return services;
     }
 }

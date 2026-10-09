@@ -43,6 +43,7 @@ internal sealed class FilaResumenProyecto
 /// <remarks>
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (RF-001)
+/// Modificado: 2026-10-09 - Agrega CantidadIncidencias (RF-002)
 /// </remarks>
 internal sealed class FilaDetalleProyecto
 {
@@ -72,6 +73,7 @@ internal sealed class FilaDetalleProyecto
     public bool? EstadoAlArchivarActivo { get; init; }
     public bool? EstadoAlArchivarEsSistema { get; init; }
     public int CantidadAgrupaciones { get; init; }
+    public int CantidadIncidencias { get; init; }
 
     /// <summary>Convierte la fila en el DTO de detalle.</summary>
     public ProyectoDto ADto() => new(
@@ -85,7 +87,8 @@ internal sealed class FilaDetalleProyecto
         EstadoAlArchivar(),
         CantidadAgrupaciones,
         SqlUtil.Utc(FechaCreacion),
-        SqlUtil.Utc(FechaModificacion));
+        SqlUtil.Utc(FechaModificacion),
+        CantidadIncidencias);
 
     private PersonaReferenciaDto? ArchivadoPor() => ArchivadoPorId is { } id
         ? new PersonaReferenciaDto(id, ArchivadoPorNombre ?? string.Empty, ArchivadoPorActivo ?? false)

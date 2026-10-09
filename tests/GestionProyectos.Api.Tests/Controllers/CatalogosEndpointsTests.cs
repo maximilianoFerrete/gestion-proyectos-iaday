@@ -16,6 +16,7 @@ namespace GestionProyectos.Api.Tests.Controllers;
 /// <remarks>
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (tests RF-001)
+/// Modificado: 2026-10-09 - El admin informa sus permisos en usuario-actual (RF-002, 0.1)
 /// </remarks>
 public sealed class CatalogosEndpointsTests : IDisposable
 {
@@ -247,7 +248,10 @@ public sealed class CatalogosEndpointsTests : IDisposable
             .GetFromJsonAsync<UsuarioActualDto>("/api/usuario-actual", Dtos.Json);
 
         // Assert
-        Assert.Equal(new UsuarioActualDto(true, 1, "Administrador", "admin@gestionproyectos.local", true), dto);
+        Assert.Equal(new UsuarioActualDto(true, 1, "Administrador", "admin@gestionproyectos.local", true)
+        {
+            Permisos = ["Configuracion.Incidencias", "Incidencias.CambiarTipo"], // RF-002 0.1, CA-03
+        }, dto);
     }
 
     // CA-35: header de persona inactiva → 401 USUARIO_INVALIDO

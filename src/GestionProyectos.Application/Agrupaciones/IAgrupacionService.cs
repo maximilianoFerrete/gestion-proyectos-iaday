@@ -6,6 +6,7 @@ namespace GestionProyectos.Application.Agrupaciones;
 /// <remarks>
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (RF-001)
+/// Modificado: 2026-10-09 - La eliminación desasocia las incidencias (RF-002, RN-30)
 /// </remarks>
 public interface IAgrupacionService
 {
@@ -21,6 +22,6 @@ public interface IAgrupacionService
     /// <summary>Edita una agrupación de un proyecto no archivado.</summary>
     Task<AgrupacionDto> EditarAsync(int proyectoId, int id, AgrupacionRequest request, CancellationToken ct);
 
-    /// <summary>Elimina físicamente una agrupación en transacción (RN-30).</summary>
+    /// <summary>Desasocia sus incidencias y elimina la agrupación en una transacción (RN-30).</summary>
     Task EliminarAsync(int proyectoId, int id, CancellationToken ct);
 }

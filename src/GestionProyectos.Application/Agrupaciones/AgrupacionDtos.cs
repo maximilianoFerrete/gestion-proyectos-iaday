@@ -10,6 +10,7 @@ namespace GestionProyectos.Application.Agrupaciones;
 /// <remarks>
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (RF-001)
+/// Modificado: 2026-10-09 - Agrega CantidadIncidencias (RF-002)
 /// </remarks>
 public sealed record AgrupacionDto(
     int Id,
@@ -17,14 +18,15 @@ public sealed record AgrupacionDto(
     string Nombre,
     string Descripcion,
     DateTime FechaCreacion,
-    DateTime? FechaModificacion)
+    DateTime? FechaModificacion,
+    int CantidadIncidencias)
 {
-    /// <summary>Crea el DTO a partir de la entidad.</summary>
-    public static AgrupacionDto Desde(Agrupacion agrupacion)
+    /// <summary>Crea el DTO a partir de la entidad y su cantidad de incidencias.</summary>
+    public static AgrupacionDto Desde(Agrupacion agrupacion, int cantidadIncidencias = 0)
     {
         ArgumentNullException.ThrowIfNull(agrupacion);
         return new AgrupacionDto(agrupacion.Id, agrupacion.ProyectoId, agrupacion.Nombre,
-            agrupacion.Descripcion, agrupacion.FechaCreacion, agrupacion.FechaModificacion);
+            agrupacion.Descripcion, agrupacion.FechaCreacion, agrupacion.FechaModificacion, cantidadIncidencias);
     }
 }
 

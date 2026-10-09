@@ -5,7 +5,7 @@ import { EstadoRefDto } from '../../estados-proyecto/models/estado-proyecto.mode
  * Modelos de Proyectos según el contrato API de RF-001.
  *
  * Creado: 2026-10-09
- * Modificado: 2026-10-09 - Creación inicial (RF-001)
+ * Modificado: 2026-10-09 - `ProyectoDto.cantidadIncidencias` (RF-002)
  */
 
 /** Ítem de `GET /api/proyectos` (`Paginado<ProyectoResumenDto>`). */
@@ -30,6 +30,8 @@ export interface ProyectoDto extends ProyectoResumenDto {
   readonly archivadoPor: PersonaRefDto | null;
   readonly estadoAlArchivar: EstadoRefDto | null;
   readonly cantidadAgrupaciones: number;
+  /** Cantidad de incidencias del proyecto (RF-002). */
+  readonly cantidadIncidencias: number;
   readonly fechaCreacion: string;
   readonly fechaModificacion: string | null;
 }

@@ -6,6 +6,7 @@ namespace GestionProyectos.Infrastructure.SqlServer.Conexion;
 /// <remarks>
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (RF-001)
+/// Modificado: 2026-10-09 - Conversión de fechas DATE opcionales (RF-002)
 /// </remarks>
 internal static class SqlUtil
 {
@@ -34,6 +35,12 @@ internal static class SqlUtil
     /// <summary>Convierte un valor DATE leído como DateTime a DateOnly.</summary>
     public static DateOnly Fecha(DateTime fecha) => DateOnly.FromDateTime(fecha);
 
+    /// <summary>Convierte un valor DATE opcional leído como DateTime a DateOnly.</summary>
+    public static DateOnly? Fecha(DateTime? fecha) => fecha is null ? null : Fecha(fecha.Value);
+
     /// <summary>Convierte DateOnly a DateTime para enviarlo como parámetro DATE.</summary>
     public static DateTime Parametro(DateOnly fecha) => fecha.ToDateTime(TimeOnly.MinValue);
+
+    /// <summary>Convierte un DateOnly opcional a DateTime para enviarlo como parámetro DATE.</summary>
+    public static DateTime? Parametro(DateOnly? fecha) => fecha is null ? null : Parametro(fecha.Value);
 }

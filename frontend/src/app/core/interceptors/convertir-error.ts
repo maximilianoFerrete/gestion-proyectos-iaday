@@ -1,3 +1,9 @@
+/**
+ * Conversión de respuestas de error HTTP (ProblemDetails) a `ErrorApi`.
+ *
+ * Creado: 2026-10-09
+ * Modificado: 2026-10-09 - Expone la extensión `incidencias` (RF-002 0.2)
+ */
 import { HttpErrorResponse } from '@angular/common/http';
 import { ErrorApi, ErroresPorCampo, ProblemDetails } from '../models/error-api.model';
 
@@ -36,6 +42,12 @@ function normalizarErrores(errores: ProblemDetails['errors']): ErroresPorCampo {
   return resultado;
 }
 
+/** Lee la extensión `incidencias` (RF-002 0.2) descartando valores que no sean strings. */
+export function leerIncidenciasAfectadas(cuerpo: ProblemDetails): string[] {
+  const valor = cuerpo.incidencias;
+  return Array.isArray(valor) ? valor.filter((c): c is string => typeof c === 'string') : [];
+}
+
 /** Mensaje por defecto según el código HTTP cuando no hay `detail`. */
 function mensajePorDefecto(status: number, titulo: string | undefined): string {
   if (status === 0) {
@@ -65,5 +77,11 @@ export function convertirError(respuesta: HttpErrorResponse): ErrorApi {
         (tieneErroresCampo
           ? MENSAJES_GENERICOS.validacion
           : mensajePorDefecto(respuesta.status, cuerpo.title)));
-  return new ErrorApi(respuesta.status, cuerpo.codigo ?? null, detalle, errores);
+  return new ErrorApi(
+    respuesta.status,
+    cuerpo.codigo ?? null,
+    detalle,
+    errores,
+    leerIncidenciasAfectadas(cuerpo),
+  );
 }

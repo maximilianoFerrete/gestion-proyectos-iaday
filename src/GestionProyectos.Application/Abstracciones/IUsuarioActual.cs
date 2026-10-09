@@ -6,6 +6,7 @@ namespace GestionProyectos.Application.Abstracciones;
 /// <remarks>
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (RF-001)
+/// Modificado: 2026-10-09 - Agrega Permisos y TienePermiso (RF-002, 0.1)
 /// </remarks>
 public interface IUsuarioActual
 {
@@ -20,4 +21,10 @@ public interface IUsuarioActual
 
     /// <summary>Indica si el usuario actual es administrador.</summary>
     bool EsAdmin { get; }
+
+    /// <summary>Permisos del usuario actual (vacío si es anónimo).</summary>
+    IReadOnlyCollection<string> Permisos { get; }
+
+    /// <summary>Indica si el usuario actual tiene el permiso indicado.</summary>
+    bool TienePermiso(string permiso);
 }

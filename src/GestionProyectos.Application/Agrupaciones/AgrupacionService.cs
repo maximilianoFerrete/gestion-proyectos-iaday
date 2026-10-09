@@ -13,10 +13,12 @@ namespace GestionProyectos.Application.Agrupaciones;
 /// <remarks>
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (RF-001)
+/// Modificado: 2026-10-09 - Cantidad de incidencias y desasociación al eliminar (RF-002, RN-30)
 /// </remarks>
 public class AgrupacionService(
     IAgrupacionRepository agrupaciones,
     IProyectoRepository proyectos,
+    IIncidenciaRepository incidencias,
     IUnitOfWork unitOfWork,
     IValidator<AgrupacionRequest> validador,
     TimeProvider reloj,
@@ -27,14 +29,16 @@ public class AgrupacionService(
     {
         await ObtenerProyectoAsync(proyectoId, ct);
         var lista = await agrupaciones.ListarPorProyectoAsync(proyectoId, ct);
-        return lista.Select(AgrupacionDto.Desde).ToList();
+        var cantidades = await agrupaciones.ContarIncidenciasPorAgrupacionAsync(proyectoId, ct);
+        return lista.Select(a => AgrupacionDto.Desde(a, cantidades.GetValueOrDefault(a.Id))).ToList();
     }
 
     /// <inheritdoc />
     public async Task<AgrupacionDto> ObtenerAsync(int proyectoId, int id, CancellationToken ct)
     {
         await ObtenerProyectoAsync(proyectoId, ct);
-        return AgrupacionDto.Desde(await ObtenerDelProyectoAsync(proyectoId, id, ct));
+        var agrupacion = await ObtenerDelProyectoAsync(proyectoId, id, ct);
+        return AgrupacionDto.Desde(agrupacion, await agrupaciones.ContarIncidenciasAsync(id, ct));
     }
 
     /// <inheritdoc />
@@ -66,7 +70,7 @@ public class AgrupacionService(
         agrupacion.Actualizar(datos.Nombre!, datos.Descripcion!, reloj.AhoraUtc());
         await agrupaciones.ActualizarAsync(agrupacion, ct);
         logger.LogInformation("Agrupación {AgrupacionId} actualizada", agrupacion.Id);
-        return AgrupacionDto.Desde(agrupacion);
+        return AgrupacionDto.Desde(agrupacion, await agrupaciones.ContarIncidenciasAsync(agrupacion.Id, ct));
     }
 
     /// <inheritdoc />
@@ -76,11 +80,20 @@ public class AgrupacionService(
         var agrupacion = await ObtenerDelProyectoAsync(proyectoId, id, ct);
         proyecto.AsegurarEditable();
 
-        // RF futuro de Incidencias: desasociarlas aquí, antes de borrar (RN-30).
-        await unitOfWork.EjecutarEnTransaccionAsync(
-            () => agrupaciones.EliminarAsync(agrupacion.Id, ct), ct);
-        logger.LogInformation("Agrupación {AgrupacionId} eliminada del proyecto {ProyectoId}",
-            agrupacion.Id, proyectoId);
+        var ahora = reloj.AhoraUtc();
+        var desasociadas = await unitOfWork.EjecutarEnTransaccionAsync(async () =>
+        {
+            var bloqueado = await incidencias.BloquearProyectoAsync(proyectoId, ct)
+                ?? throw new EntidadNoEncontradaException(CodigosError.ProyectoNoEncontrado,
+                    $"No existe el proyecto con id {proyectoId}.");
+            bloqueado.AsegurarEditable();
+            var cantidad = await incidencias.DesasociarAgrupacionAsync(proyectoId, agrupacion.Id, ahora, ct);
+            await agrupaciones.EliminarAsync(agrupacion.Id, ct);
+            return cantidad;
+        }, ct);
+        logger.LogInformation(
+            "Agrupación {AgrupacionId} eliminada del proyecto {ProyectoId}; {Cantidad} incidencias desasociadas",
+            agrupacion.Id, proyectoId, desasociadas);
     }
 
     private async Task<AgrupacionRequest> NormalizarYValidarAsync(AgrupacionRequest request,

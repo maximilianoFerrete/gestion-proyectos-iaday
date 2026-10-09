@@ -9,6 +9,7 @@ namespace GestionProyectos.Infrastructure.SqlServer.Conexion;
 /// <remarks>
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (RF-001)
+/// Modificado: 2026-10-09 - Traduce también violaciones de FK conocidas (RF-002)
 /// </remarks>
 internal sealed class EjecutorSql(ISesionBaseDatos sesion)
 {
@@ -38,7 +39,7 @@ internal sealed class EjecutorSql(ISesionBaseDatos sesion)
         return (filas, total);
     }
 
-    /// <summary>Ejecuta un comando que devuelve un escalar, traduciendo duplicados a 409.</summary>
+    /// <summary>Ejecuta un comando que devuelve un escalar, traduciendo errores conocidos.</summary>
     public async Task<T> EscalarAsync<T>(string sql, object? parametros, CancellationToken ct)
     {
         var conexion = await sesion.ObtenerConexionAsync(ct);
@@ -47,13 +48,13 @@ internal sealed class EjecutorSql(ISesionBaseDatos sesion)
             return await conexion.ExecuteScalarAsync<T>(Comando(sql, parametros, ct))
                 ?? throw new InvalidOperationException("El comando no devolvió un valor.");
         }
-        catch (SqlException ex) when (TraductorErroresSql.EsDuplicado(ex))
+        catch (SqlException ex) when (TraductorErroresSql.EsConocido(ex))
         {
             throw TraductorErroresSql.Traducir(ex);
         }
     }
 
-    /// <summary>Ejecuta un comando y devuelve las filas afectadas, traduciendo duplicados a 409.</summary>
+    /// <summary>Ejecuta un comando y devuelve las filas afectadas, traduciendo errores conocidos.</summary>
     public async Task<int> EjecutarAsync(string sql, object? parametros, CancellationToken ct)
     {
         var conexion = await sesion.ObtenerConexionAsync(ct);
@@ -61,7 +62,7 @@ internal sealed class EjecutorSql(ISesionBaseDatos sesion)
         {
             return await conexion.ExecuteAsync(Comando(sql, parametros, ct));
         }
-        catch (SqlException ex) when (TraductorErroresSql.EsDuplicado(ex))
+        catch (SqlException ex) when (TraductorErroresSql.EsConocido(ex))
         {
             throw TraductorErroresSql.Traducir(ex);
         }

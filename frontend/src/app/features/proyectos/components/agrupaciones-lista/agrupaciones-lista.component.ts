@@ -15,7 +15,7 @@ export function truncar(texto: string, largo = LARGO_DESCRIPCION_TRUNCADA): stri
  * oculta Nueva / Editar / Eliminar.
  *
  * Creado: 2026-10-09
- * Modificado: 2026-10-09 - Creación inicial (RF-001)
+ * Modificado: 2026-10-09 - Columna Incidencias (RF-002)
  */
 @Component({
   selector: 'app-agrupaciones-lista',
@@ -45,6 +45,7 @@ export function truncar(texto: string, largo = LARGO_DESCRIPCION_TRUNCADA): stri
             <tr>
               <th scope="col">Nombre</th>
               <th scope="col">Descripción</th>
+              <th scope="col">Incidencias</th>
               @if (!soloLectura()) {
                 <th scope="col"><span class="sr-only">Acciones</span></th>
               }
@@ -55,6 +56,7 @@ export function truncar(texto: string, largo = LARGO_DESCRIPCION_TRUNCADA): stri
               <tr>
                 <td>{{ agrupacion.nombre }}</td>
                 <td [title]="agrupacion.descripcion">{{ truncar(agrupacion.descripcion) }}</td>
+                <td>{{ agrupacion.cantidadIncidencias }}</td>
                 @if (!soloLectura()) {
                   <td class="acciones-fila">
                     <a

@@ -12,7 +12,7 @@ import { UsuarioSelectorComponent } from './usuario-selector.component';
  * contenido ruteado; toasts y diálogo de confirmación únicos.
  *
  * Creado: 2026-10-09
- * Modificado: 2026-10-09 - Creación inicial (RF-001)
+ * Modificado: 2026-10-09 - Menú de configuración de incidencias (RF-002)
  */
 @Component({
   selector: 'app-shell',
@@ -36,6 +36,21 @@ import { UsuarioSelectorComponent } from './usuario-selector.component';
           <span class="menu-grupo-titulo">Configuración</span>
           <a routerLink="/configuracion/estados-proyecto" routerLinkActive="activo">
             Estados de proyecto
+          </a>
+          <a routerLink="/configuracion/incidencias/tipos" routerLinkActive="activo">
+            Niveles y tipos
+          </a>
+          <a routerLink="/configuracion/incidencias/relaciones" routerLinkActive="activo">
+            Relaciones de tipos
+          </a>
+          <a routerLink="/configuracion/incidencias/estados" routerLinkActive="activo">
+            Estados de incidencia
+          </a>
+          <a routerLink="/configuracion/incidencias/flujos" routerLinkActive="activo">
+            Flujos de trabajo
+          </a>
+          <a routerLink="/configuracion/incidencias/prioridades" routerLinkActive="activo">
+            Prioridades
           </a>
         </span>
       </nav>

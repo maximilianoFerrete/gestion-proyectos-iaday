@@ -12,6 +12,7 @@ namespace GestionProyectos.Application.Tests.Comun;
 /// <remarks>
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (tests RF-001)
+/// Modificado: 2026-10-09 - ProyectoDto con CantidadIncidencias (RF-002)
 /// </remarks>
 internal static class DatosPrueba
 {
@@ -67,7 +68,7 @@ internal static class DatosPrueba
         new(id, codigo, "Portal clientes", "Nuevo portal de autogestión.",
             new PersonaReferenciaDto(2, "Ana Gómez", true), FechaInicio, FechaObjetivo,
             new EstadoReferenciaDto(1, "En planificación", false, true, false), false, null, null, null,
-            0, FechaAnterior, null);
+            0, FechaAnterior, null, 0);
 
     /// <summary>Texto de la longitud indicada.</summary>
     public static string Texto(int largo) => new('a', largo);

@@ -1,6 +1,7 @@
 using FluentValidation;
 using GestionProyectos.Application.Abstracciones.Persistencia;
 using GestionProyectos.Application.Agrupaciones;
+using GestionProyectos.Application.Incidencias;
 using GestionProyectos.Application.Tests.Comun;
 using GestionProyectos.Domain.Entidades;
 using GestionProyectos.Domain.Excepciones;
@@ -15,6 +16,7 @@ namespace GestionProyectos.Application.Tests.Agrupaciones;
 /// <remarks>
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (tests RF-001)
+/// Modificado: 2026-10-09 - Inyecta IIncidenciaRepository y el bloqueo del proyecto (RF-002, RN-30)
 /// </remarks>
 public class AgrupacionServiceTests
 {
@@ -22,19 +24,24 @@ public class AgrupacionServiceTests
     private const int AgrupacionId = 8;
     private readonly IAgrupacionRepository _agrupaciones = Substitute.For<IAgrupacionRepository>();
     private readonly IProyectoRepository _proyectos = Substitute.For<IProyectoRepository>();
+    private readonly IIncidenciaRepository _incidencias = Substitute.For<IIncidenciaRepository>();
     private readonly IUnitOfWork _uow = Substitute.For<IUnitOfWork>();
     private readonly AgrupacionService _sut;
     private readonly AgrupacionRequest _request = new("Módulo pagos", "Incidencias del circuito de pagos.");
 
     public AgrupacionServiceTests()
     {
-        _sut = new AgrupacionService(_agrupaciones, _proyectos, _uow, new AgrupacionRequestValidator(),
+        _sut = new AgrupacionService(_agrupaciones, _proyectos, _incidencias, _uow, new AgrupacionRequestValidator(),
             DatosPrueba.Reloj(), NullLogger<AgrupacionService>.Instance);
     }
 
-    private void ExisteProyecto(bool archivado = false) =>
+    private void ExisteProyecto(bool archivado = false)
+    {
         _proyectos.ObtenerPorIdAsync(ProyectoId, Arg.Any<CancellationToken>())
             .Returns(DatosPrueba.Proyecto(ProyectoId, archivado: archivado));
+        _incidencias.BloquearProyectoAsync(ProyectoId, Arg.Any<CancellationToken>())
+            .Returns(new ProyectoBloqueado(ProyectoId, "PRJ-0003", archivado));
+    }
 
     private Agrupacion ExisteAgrupacion(int proyectoId = ProyectoId)
     {

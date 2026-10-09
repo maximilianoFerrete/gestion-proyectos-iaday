@@ -11,6 +11,7 @@ namespace GestionProyectos.Api.Errores;
 /// <remarks>
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (RF-001)
+/// Modificado: 2026-10-09 - Copia las extensiones de la excepción de negocio (RF-002, 0.2)
 /// </remarks>
 public sealed class FabricaProblemas
 {
@@ -38,6 +39,19 @@ public sealed class FabricaProblemas
             Detail = detalle,
         };
         return Completar(problema, contexto, codigo);
+    }
+
+    /// <summary>Crea el ProblemDetails de una excepción de negocio, con sus extensiones.</summary>
+    public ProblemDetails Crear(HttpContext contexto, int status, ExcepcionDominio excepcion)
+    {
+        ArgumentNullException.ThrowIfNull(excepcion);
+        var problema = Crear(contexto, status, excepcion.Codigo, excepcion.Message);
+        foreach (var (clave, valor) in excepcion.Extensiones)
+        {
+            problema.Extensions.TryAdd(clave, valor);
+        }
+
+        return problema;
     }
 
     /// <summary>Crea un ValidationProblemDetails (400 VALIDACION) con claves en camelCase.</summary>

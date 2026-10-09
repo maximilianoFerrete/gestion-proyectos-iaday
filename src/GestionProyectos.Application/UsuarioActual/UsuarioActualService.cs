@@ -10,6 +10,7 @@ namespace GestionProyectos.Application.UsuarioActual;
 /// <remarks>
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (RF-001)
+/// Modificado: 2026-10-09 - Informa los permisos del usuario actual (RF-002, 0.1)
 /// </remarks>
 public class UsuarioActualService(IUsuarioActual usuarioActual, IPersonaRepository personas)
     : IUsuarioActualService
@@ -28,7 +29,10 @@ public class UsuarioActualService(IUsuarioActual usuarioActual, IPersonaReposito
             throw new UsuarioInvalidoException();
         }
 
-        return new UsuarioActualDto(true, persona.Id, persona.Nombre, persona.Email, persona.EsAdmin);
+        return new UsuarioActualDto(true, persona.Id, persona.Nombre, persona.Email, persona.EsAdmin)
+        {
+            Permisos = (usuarioActual.Permisos ?? []).Order(StringComparer.Ordinal).ToList(),
+        };
     }
 }
 

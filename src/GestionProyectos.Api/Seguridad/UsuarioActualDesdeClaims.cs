@@ -10,6 +10,7 @@ namespace GestionProyectos.Api.Seguridad;
 /// <remarks>
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (RF-001)
+/// Modificado: 2026-10-09 - Permisos leídos de los claims "permiso" (RF-002, 0.1)
 /// </remarks>
 public sealed class UsuarioActualDesdeClaims(IHttpContextAccessor accesor) : IUsuarioActual
 {
@@ -31,4 +32,14 @@ public sealed class UsuarioActualDesdeClaims(IHttpContextAccessor accesor) : IUs
 
     /// <inheritdoc />
     public bool EsAdmin => Principal?.IsInRole(EsquemaProvisional.RolAdmin) ?? false;
+
+    /// <inheritdoc />
+    public IReadOnlyCollection<string> Permisos =>
+        Principal?.FindAll(EsquemaProvisional.ClaimPermiso).Select(c => c.Value).Distinct(StringComparer.Ordinal)
+            .ToList() ?? [];
+
+    /// <inheritdoc />
+    public bool TienePermiso(string permiso) =>
+        !string.IsNullOrWhiteSpace(permiso)
+        && (Principal?.HasClaim(EsquemaProvisional.ClaimPermiso, permiso) ?? false);
 }

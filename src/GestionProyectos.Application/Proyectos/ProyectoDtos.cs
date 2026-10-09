@@ -25,6 +25,7 @@ public sealed record ProyectoResumenDto(
 /// <remarks>
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (RF-001)
+/// Modificado: 2026-10-09 - Agrega CantidadIncidencias (RF-002)
 /// </remarks>
 public sealed record ProyectoDto(
     int Id,
@@ -41,4 +42,5 @@ public sealed record ProyectoDto(
     EstadoReferenciaDto? EstadoAlArchivar,
     int CantidadAgrupaciones,
     DateTime FechaCreacion,
-    DateTime? FechaModificacion);
+    DateTime? FechaModificacion,
+    int CantidadIncidencias);

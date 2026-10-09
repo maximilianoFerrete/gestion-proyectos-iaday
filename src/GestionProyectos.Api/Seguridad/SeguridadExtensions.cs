@@ -11,6 +11,7 @@ namespace GestionProyectos.Api.Seguridad;
 /// <remarks>
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (RF-001)
+/// Modificado: 2026-10-09 - Una política por permiso con el mismo nombre (RF-002, 0.1)
 /// </remarks>
 public static class SeguridadExtensions
 {
@@ -33,10 +34,16 @@ public static class SeguridadExtensions
                 EsquemaProvisional.Nombre, null);
         }
 
-        services.AddAuthorizationBuilder()
+        var autorizacion = services.AddAuthorizationBuilder()
             .AddPolicy(EsquemaProvisional.PoliticaSoloAdministradores, politica => politica
                 .RequireAuthenticatedUser()
                 .RequireRole(EsquemaProvisional.RolAdmin));
+        foreach (var permiso in Permisos.Todos)
+        {
+            autorizacion.AddPolicy(permiso, politica => politica
+                .RequireAuthenticatedUser()
+                .RequireClaim(EsquemaProvisional.ClaimPermiso, permiso));
+        }
 
         services.AddSingleton<IAuthorizationMiddlewareResultHandler, ManejadorResultadoAutorizacion>();
         services.AddHttpContextAccessor();

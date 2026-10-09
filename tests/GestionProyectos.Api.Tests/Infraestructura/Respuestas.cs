@@ -39,6 +39,7 @@ public sealed record Problema(int Status, string? Codigo, string? Detail, string
 /// <remarks>
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (tests RF-001)
+/// Modificado: 2026-10-09 - DTOs con CantidadIncidencias (RF-002)
 /// </remarks>
 public static class Dtos
 {
@@ -52,11 +53,11 @@ public static class Dtos
         new(id, $"PRJ-{id:D4}", "Portal clientes", "Nuevo portal de autogestión.",
             new PersonaReferenciaDto(2, "Ana Gómez", true), new DateOnly(2026, 10, 1), new DateOnly(2026, 12, 15),
             new EstadoReferenciaDto(1, "En planificación", false, true, false), archivado, null, null, null, 0,
-            Creado, null);
+            Creado, null, 0);
 
     /// <summary>Agrupación de ejemplo.</summary>
     public static AgrupacionDto Agrupacion(int id = 8, int proyectoId = 3) =>
-        new(id, proyectoId, "Módulo pagos", "Incidencias del circuito de pagos.", Creado, null);
+        new(id, proyectoId, "Módulo pagos", "Incidencias del circuito de pagos.", Creado, null, 0);
 
     /// <summary>Persona de ejemplo.</summary>
     public static PersonaDto Persona(int id = 2, bool activo = true) =>

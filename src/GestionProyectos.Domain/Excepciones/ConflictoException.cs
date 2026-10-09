@@ -6,6 +6,10 @@ namespace GestionProyectos.Domain.Excepciones;
 /// <remarks>
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (RF-001)
+/// Modificado: 2026-10-09 - Acepta extensiones opcionales (RF-002, 0.2)
 /// </remarks>
-public class ConflictoException(string codigo, string mensaje)
-    : ExcepcionDominio(codigo, mensaje);
+public class ConflictoException(
+    string codigo,
+    string mensaje,
+    IReadOnlyDictionary<string, object?>? extensiones = null)
+    : ExcepcionDominio(codigo, mensaje, extensiones);

@@ -26,11 +26,30 @@ import { ProyectosListadoEstadoService } from '../../services/proyectos-listado-
 import { ProyectosService } from '../../services/proyectos.service';
 
 /**
+ * Mensaje del diálogo de eliminar agrupación (RF-002 "Cambios en P3"): informa la cantidad de
+ * incidencias que quedarán sin agrupación; con 0 incidencias, el texto de RF-001.
+ */
+export function mensajeEliminarAgrupacion(agrupacion: AgrupacionDto): string {
+  const cantidad = agrupacion.cantidadIncidencias ?? 0;
+  if (cantidad === 0) {
+    return (
+      `¿Eliminar la agrupación ${agrupacion.nombre}? ` +
+      'Las incidencias asociadas no se eliminan: quedarán sin agrupación.'
+    );
+  }
+  return (
+    `¿Eliminar la agrupación ${agrupacion.nombre}? Las ${cantidad} incidencias asociadas no se ` +
+    'eliminan: quedarán sin agrupación (incluidas sus jerarquías).'
+  );
+}
+
+/**
  * P3 – Detalle de proyecto con sus agrupaciones. Archivar solo visible para administradores;
- * proyecto archivado: banner y sin acciones de modificación (RN-22).
+ * proyecto archivado: banner y sin acciones de modificación (RN-22). RF-002: botones Incidencias
+ * y Árbol, y cantidad de incidencias en el diálogo de eliminar agrupación.
  *
  * Creado: 2026-10-09
- * Modificado: 2026-10-09 - Creación inicial (RF-001)
+ * Modificado: 2026-10-09 - Accesos a incidencias y diálogo de agrupación (RF-002)
  */
 @Component({
   selector: 'app-proyecto-detalle-page',
@@ -47,6 +66,8 @@ import { ProyectosService } from '../../services/proyectos.service';
         <h1>{{ p.codigo }} – {{ p.nombre }}</h1>
         <div class="acciones">
           <a class="btn" routerLink="/proyectos" [queryParams]="queryParamsListado()">Volver</a>
+          <a class="btn" [routerLink]="['/proyectos', p.id, 'incidencias']">Incidencias</a>
+          <a class="btn" [routerLink]="['/proyectos', p.id, 'incidencias', 'arbol']">Árbol</a>
           @if (!p.archivado) {
             <a class="btn" [routerLink]="['/proyectos', p.id, 'editar']">Editar</a>
             @if (esAdmin()) {
@@ -135,9 +156,7 @@ export class ProyectoDetallePage implements OnInit {
     this.confirmacion
       .confirmar({
         titulo: 'Eliminar agrupación',
-        mensaje:
-          `¿Eliminar la agrupación ${agrupacion.nombre}? ` +
-          'Las incidencias asociadas no se eliminan: quedarán sin agrupación.',
+        mensaje: mensajeEliminarAgrupacion(agrupacion),
         textoConfirmar: 'Eliminar',
         peligro: true,
       })

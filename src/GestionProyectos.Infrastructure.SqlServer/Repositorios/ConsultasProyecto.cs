@@ -8,6 +8,7 @@ namespace GestionProyectos.Infrastructure.SqlServer.Repositorios;
 /// <remarks>
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (RF-001)
+/// Modificado: 2026-10-09 - El detalle incluye CantidadIncidencias (RF-002)
 /// </remarks>
 internal static class ConsultasProyecto
 {
@@ -23,7 +24,8 @@ internal static class ConsultasProyecto
                ea.Id AS EstadoAlArchivarId, ea.Nombre AS EstadoAlArchivarNombre,
                ea.EsFinal AS EstadoAlArchivarEsFinal, ea.Activo AS EstadoAlArchivarActivo,
                CAST(CASE WHEN ea.Codigo IS NULL THEN 0 ELSE 1 END AS BIT) AS EstadoAlArchivarEsSistema,
-               (SELECT COUNT(*) FROM dbo.Agrupaciones g WHERE g.ProyectoId = p.Id) AS CantidadAgrupaciones
+               (SELECT COUNT(*) FROM dbo.Agrupaciones g WHERE g.ProyectoId = p.Id) AS CantidadAgrupaciones,
+               (SELECT COUNT(*) FROM dbo.Incidencias i WHERE i.ProyectoId = p.Id) AS CantidadIncidencias
         FROM dbo.Proyectos p
         INNER JOIN dbo.Personas r ON r.Id = p.ResponsableId
         INNER JOIN dbo.EstadosProyecto e ON e.Id = p.EstadoId
