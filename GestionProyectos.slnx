@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/GestionProyectos.Api/GestionProyectos.Api.csproj" />
+    <Project Path="src/GestionProyectos.Application/GestionProyectos.Application.csproj" />
+    <Project Path="src/GestionProyectos.Domain/GestionProyectos.Domain.csproj" />
+    <Project Path="src/GestionProyectos.Infrastructure.SqlServer/GestionProyectos.Infrastructure.SqlServer.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/GestionProyectos.Api.Tests/GestionProyectos.Api.Tests.csproj" />
+    <Project Path="tests/GestionProyectos.Application.Tests/GestionProyectos.Application.Tests.csproj" />
+  </Folder>
+</Solution>

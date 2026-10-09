@@ -1,0 +1,138 @@
+<form class="formulario" [formGroup]="form" (ngSubmit)="enviar()" novalidate>
+  @if (erroresGenerales().length > 0) {
+    <div class="alerta alerta-error" role="alert">
+      @for (mensaje of erroresGenerales(); track $index) {
+        <p>{{ mensaje }}</p>
+      }
+    </div>
+  }
+
+  @if (esEdicion() && proyecto(); as datos) {
+    <div class="campo">
+      <label for="proyecto-codigo">Código</label>
+      <input id="proyecto-codigo" type="text" [value]="datos.codigo" readonly />
+    </div>
+  }
+
+  <div class="campo">
+    <label for="proyecto-nombre">Nombre <span aria-hidden="true">*</span></label>
+    <input
+      id="proyecto-nombre"
+      type="text"
+      formControlName="nombre"
+      required
+      [attr.aria-invalid]="errores('nombre', 'El nombre').length > 0"
+      aria-describedby="proyecto-nombre-error"
+    />
+    <app-campo-error [mensajes]="errores('nombre', 'El nombre')" idError="proyecto-nombre-error" />
+  </div>
+
+  <div class="campo">
+    <label for="proyecto-descripcion">Descripción <span aria-hidden="true">*</span></label>
+    <textarea
+      id="proyecto-descripcion"
+      rows="5"
+      formControlName="descripcion"
+      required
+      [attr.aria-invalid]="errores('descripcion', 'La descripción').length > 0"
+      aria-describedby="proyecto-descripcion-contador proyecto-descripcion-error"
+    ></textarea>
+    <small id="proyecto-descripcion-contador" class="contador">
+      {{ form.controls.descripcion.value.length }} / {{ limites.descripcionMax }}
+    </small>
+    <app-campo-error
+      [mensajes]="errores('descripcion', 'La descripción')"
+      idError="proyecto-descripcion-error"
+    />
+  </div>
+
+  <div class="campo">
+    <label for="proyecto-responsable">Responsable <span aria-hidden="true">*</span></label>
+    <select
+      id="proyecto-responsable"
+      formControlName="responsableId"
+      required
+      [attr.aria-invalid]="errores('responsableId', 'El responsable').length > 0"
+      aria-describedby="proyecto-responsable-error"
+    >
+      <option [ngValue]="null" disabled>Seleccioná un responsable</option>
+      @for (opcion of opcionesResponsable(); track opcion.valor) {
+        <option [ngValue]="opcion.valor">{{ opcion.etiqueta }}</option>
+      }
+    </select>
+    <app-campo-error
+      [mensajes]="errores('responsableId', 'El responsable')"
+      idError="proyecto-responsable-error"
+    />
+  </div>
+
+  <div class="fila-campos">
+    <div class="campo">
+      <label for="proyecto-fecha-inicio">Fecha de inicio <span aria-hidden="true">*</span></label>
+      <input
+        id="proyecto-fecha-inicio"
+        type="date"
+        formControlName="fechaInicio"
+        required
+        [attr.aria-invalid]="errores('fechaInicio', 'La fecha de inicio').length > 0"
+        aria-describedby="proyecto-fecha-inicio-error"
+      />
+      <app-campo-error
+        [mensajes]="errores('fechaInicio', 'La fecha de inicio')"
+        idError="proyecto-fecha-inicio-error"
+      />
+    </div>
+
+    <div class="campo">
+      <label for="proyecto-fecha-objetivo">Fecha objetivo <span aria-hidden="true">*</span></label>
+      <input
+        id="proyecto-fecha-objetivo"
+        type="date"
+        formControlName="fechaObjetivo"
+        required
+        [attr.aria-invalid]="erroresFechaObjetivo().length > 0"
+        aria-describedby="proyecto-fecha-objetivo-error"
+      />
+      <app-campo-error
+        [mensajes]="erroresFechaObjetivo()"
+        idError="proyecto-fecha-objetivo-error"
+      />
+    </div>
+  </div>
+
+  @if (esEdicion()) {
+    <div class="campo">
+      <label for="proyecto-estado">Estado <span aria-hidden="true">*</span></label>
+      <select
+        id="proyecto-estado"
+        formControlName="estadoId"
+        required
+        [attr.aria-invalid]="errores('estadoId', 'El estado').length > 0"
+        aria-describedby="proyecto-estado-error"
+      >
+        @for (opcion of opcionesEstado(); track opcion.valor) {
+          <option [ngValue]="opcion.valor">{{ opcion.etiqueta }}</option>
+        }
+      </select>
+      <app-campo-error
+        [mensajes]="errores('estadoId', 'El estado')"
+        idError="proyecto-estado-error"
+      />
+    </div>
+  } @else {
+    <p class="ayuda">
+      @if (nombreEstadoInicial(); as estadoInicial) {
+        El proyecto se creará en estado {{ estadoInicial }}
+      } @else {
+        El proyecto se creará en el estado inicial configurado.
+      }
+    </p>
+  }
+
+  <div class="acciones">
+    <button type="button" class="btn" (click)="cancelar.emit()">Cancelar</button>
+    <button type="submit" class="btn btn-primario" [disabled]="form.invalid || enviando()">
+      {{ enviando() ? 'Guardando...' : 'Guardar' }}
+    </button>
+  </div>
+</form>
