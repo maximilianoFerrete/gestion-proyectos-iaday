@@ -17,6 +17,7 @@ namespace GestionProyectos.Api.Tests.Controllers;
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (tests RF-001)
 /// Modificado: 2026-10-09 - El admin informa sus permisos en usuario-actual (RF-002, 0.1)
+/// Modificado: 2026-10-10 - Persona no admin recibe permisos vacío (tests RF-002, CA-03)
 /// </remarks>
 public sealed class CatalogosEndpointsTests : IDisposable
 {
@@ -252,6 +253,19 @@ public sealed class CatalogosEndpointsTests : IDisposable
         {
             Permisos = ["Configuracion.Incidencias", "Incidencias.CambiarTipo"], // RF-002 0.1, CA-03
         }, dto);
+    }
+
+    // RF-002 RN-03, CA-03: persona no admin → 200 con permisos []
+    [Fact]
+    public async Task UsuarioActual_HeaderNoAdmin_Devuelve200SinPermisos()
+    {
+        // Act
+        var dto = await _api.Cliente(ApiFactory.IdNoAdmin.ToString())
+            .GetFromJsonAsync<UsuarioActualDto>("/api/usuario-actual", Dtos.Json);
+
+        // Assert
+        Assert.Equal(new UsuarioActualDto(true, 2, "Ana Gómez", "ana.gomez@empresa.com", false), dto);
+        Assert.Empty(dto!.Permisos);
     }
 
     // CA-35: header de persona inactiva → 401 USUARIO_INVALIDO

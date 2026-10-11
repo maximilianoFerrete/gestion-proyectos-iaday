@@ -1,8 +1,15 @@
 using GestionProyectos.Application.Abstracciones.Persistencia;
 using GestionProyectos.Application.Agrupaciones;
+using GestionProyectos.Application.EstadosIncidencia;
 using GestionProyectos.Application.EstadosProyecto;
+using GestionProyectos.Application.FlujosIncidencia;
+using GestionProyectos.Application.Incidencias;
+using GestionProyectos.Application.NivelesIncidencia;
 using GestionProyectos.Application.Personas;
+using GestionProyectos.Application.PrioridadesIncidencia;
 using GestionProyectos.Application.Proyectos;
+using GestionProyectos.Application.RelacionesTiposIncidencia;
+using GestionProyectos.Application.TiposIncidencia;
 using GestionProyectos.Domain.Entidades;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -20,6 +27,7 @@ namespace GestionProyectos.Api.Tests.Infraestructura;
 /// <remarks>
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (tests RF-001)
+/// Modificado: 2026-10-10 - Sustitutos de servicios y repositorios de incidencias (tests RF-002)
 /// </remarks>
 public sealed class ApiFactory : WebApplicationFactory<Program>
 {
@@ -32,6 +40,14 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
     public IAgrupacionService Agrupaciones { get; } = Substitute.For<IAgrupacionService>();
     public IPersonaService Personas { get; } = Substitute.For<IPersonaService>();
     public IEstadoProyectoService Estados { get; } = Substitute.For<IEstadoProyectoService>();
+    public IIncidenciaService Incidencias { get; } = Substitute.For<IIncidenciaService>();
+    public IIncidenciaConsultaService ConsultasIncidencias { get; } = Substitute.For<IIncidenciaConsultaService>();
+    public INivelIncidenciaService Niveles { get; } = Substitute.For<INivelIncidenciaService>();
+    public ITipoIncidenciaService Tipos { get; } = Substitute.For<ITipoIncidenciaService>();
+    public IRelacionTipoIncidenciaService Relaciones { get; } = Substitute.For<IRelacionTipoIncidenciaService>();
+    public IEstadoIncidenciaService EstadosIncidencia { get; } = Substitute.For<IEstadoIncidenciaService>();
+    public IFlujoIncidenciaService Flujos { get; } = Substitute.For<IFlujoIncidenciaService>();
+    public IPrioridadIncidenciaService Prioridades { get; } = Substitute.For<IPrioridadIncidenciaService>();
 
     /// <summary>Repositorio de personas usado por la identificación del usuario actual.</summary>
     public IPersonaRepository RepoPersonas { get; } = Substitute.For<IPersonaRepository>();
@@ -79,6 +95,21 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
             Reemplazar(services, Agrupaciones);
             Reemplazar(services, Personas);
             Reemplazar(services, Estados);
+            Reemplazar(services, Substitute.For<IIncidenciaRepository>());
+            Reemplazar(services, Substitute.For<INivelIncidenciaRepository>());
+            Reemplazar(services, Substitute.For<ITipoIncidenciaRepository>());
+            Reemplazar(services, Substitute.For<IRelacionTipoIncidenciaRepository>());
+            Reemplazar(services, Substitute.For<IEstadoIncidenciaRepository>());
+            Reemplazar(services, Substitute.For<IFlujoIncidenciaRepository>());
+            Reemplazar(services, Substitute.For<IPrioridadIncidenciaRepository>());
+            Reemplazar(services, Incidencias);
+            Reemplazar(services, ConsultasIncidencias);
+            Reemplazar(services, Niveles);
+            Reemplazar(services, Tipos);
+            Reemplazar(services, Relaciones);
+            Reemplazar(services, EstadosIncidencia);
+            Reemplazar(services, Flujos);
+            Reemplazar(services, Prioridades);
         });
     }
 

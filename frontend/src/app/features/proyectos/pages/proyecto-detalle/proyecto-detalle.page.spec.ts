@@ -9,7 +9,7 @@ import { AgrupacionDto } from '../../models/agrupacion.model';
 import { ProyectoDto } from '../../models/proyecto.model';
 import { AgrupacionesService } from '../../services/agrupaciones.service';
 import { ProyectosService } from '../../services/proyectos.service';
-import { ProyectoDetallePage } from './proyecto-detalle.page';
+import { ProyectoDetallePage, mensajeEliminarAgrupacion } from './proyecto-detalle.page';
 
 const PROYECTO: ProyectoDto = {
   id: 3,
@@ -49,7 +49,11 @@ const AGRUPACION: AgrupacionDto = {
   fechaModificacion: null,
 };
 
-/** Tests de ProyectoDetallePage (P3, CA-21 a CA-23, CA-28, CA-31). */
+/**
+ * Tests de ProyectoDetallePage (P3, CA-21 a CA-23, CA-28, CA-31).
+ * RF-002 "Cambios en P3": botones Incidencias/Árbol, cantidad de incidencias y diálogo de
+ * eliminar agrupación con la cantidad (CA-40, CA-41).
+ */
 describe('ProyectoDetallePage', () => {
   let fixture: ComponentFixture<ProyectoDetallePage>;
   const proyectos = { obtener: vi.fn(), archivar: vi.fn() };
@@ -172,6 +176,61 @@ describe('ProyectoDetallePage', () => {
     expect(agrupaciones.listar).toHaveBeenCalledTimes(2);
   });
 
+  // RF-002 P3: botones Incidencias y Árbol con sus rutas
+  it('muestra los botones Incidencias y Árbol con las rutas del proyecto', async () => {
+    const raiz = await crear(PROYECTO);
+
+    expect(accion(raiz, 'Incidencias')?.getAttribute('href')).toBe('/proyectos/3/incidencias');
+    expect(accion(raiz, 'Árbol')?.getAttribute('href')).toBe('/proyectos/3/incidencias/arbol');
+  });
+
+  // RF-002 CA-21: el archivado también ofrece consultar incidencias y árbol
+  it('proyecto archivado conserva los botones Incidencias y Árbol', async () => {
+    const raiz = await crear(ARCHIVADO);
+
+    expect(accion(raiz, 'Incidencias')).toBeDefined();
+    expect(accion(raiz, 'Árbol')).toBeDefined();
+  });
+
+  // RF-002 CA-41: total de incidencias del proyecto y columna Incidencias de agrupaciones
+  it('muestra la cantidad de incidencias del proyecto y de cada agrupación', async () => {
+    proyectos.obtener.mockReturnValue(of({ ...PROYECTO, cantidadIncidencias: 42 }));
+    agrupaciones.listar.mockReturnValue(of([{ ...AGRUPACION, cantidadIncidencias: 7 }]));
+    fixture = TestBed.createComponent(ProyectoDetallePage);
+    fixture.componentRef.setInput('id', '3');
+    await fixture.whenStable();
+    const raiz = fixture.nativeElement as HTMLElement;
+
+    expect(raiz.textContent).toContain('42');
+    const encabezados = Array.from(raiz.querySelectorAll('th')).map((th) => th.textContent?.trim());
+    expect(encabezados).toContain('Incidencias');
+    expect(raiz.querySelector('tbody')?.textContent).toContain('7');
+  });
+
+  // RF-002 CA-40: el diálogo de eliminar informa la cantidad de incidencias asociadas
+  it('el diálogo de eliminar agrupación con incidencias informa la cantidad', async () => {
+    proyectos.obtener.mockReturnValue(of(PROYECTO));
+    agrupaciones.listar.mockReturnValue(of([{ ...AGRUPACION, cantidadIncidencias: 4 }]));
+    fixture = TestBed.createComponent(ProyectoDetallePage);
+    fixture.componentRef.setInput('id', '3');
+    await fixture.whenStable();
+    const confirmacion = TestBed.inject(ConfirmacionService);
+
+    accion(fixture.nativeElement as HTMLElement, 'Eliminar')?.click();
+
+    expect(confirmacion.solicitud()?.mensaje).toBe(
+      '¿Eliminar la agrupación Módulo pagos? Las 4 incidencias asociadas no se eliminan: ' +
+        'quedarán sin agrupación (incluidas sus jerarquías).',
+    );
+  });
+
+  // RF-002 P3: con 0 incidencias se mantiene el texto de RF-001
+  it('mensajeEliminarAgrupacion con 0 incidencias usa el texto de RF-001', () => {
+    expect(mensajeEliminarAgrupacion(AGRUPACION)).toBe(
+      '¿Eliminar la agrupación Módulo pagos? Las incidencias asociadas no se eliminan: quedarán sin agrupación.',
+    );
+  });
+
   // CA-28: 404 al cargar → "No se encontró el recurso"
   it('proyecto inexistente muestra "No se encontró el recurso"', async () => {
     proyectos.obtener.mockReturnValue(
@@ -182,6 +241,8 @@ describe('ProyectoDetallePage', () => {
     fixture.componentRef.setInput('id', '99');
     await fixture.whenStable();
 
-    expect((fixture.nativeElement as HTMLElement).textContent).toContain('No se encontró el recurso');
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain(
+      'No se encontró el recurso',
+    );
   });
 });

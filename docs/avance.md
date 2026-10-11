@@ -3,4 +3,5 @@
 | RF | Análisis | BD | Backend | Frontend | Tests | Estado |
 |---|---|---|---|---|---|---|
 | RF-001 Proyectos y agrupaciones | ✅ | ✅ | ✅ | ✅ | ✅ 418/418 | ✅ terminado |
-| RF-002 Incidencias y jerarquía | ✅ | ✅ | ✅ | ✅ | ⏳ | 🔄 prueba manual del usuario antes de tests |
+| RF-002 Incidencias y jerarquía | ✅ | ✅ | ✅ | ✅ | ✅ .NET 595/595 · Angular 306/306 | ✅ terminado (pendiente: tests de integración LocalDB opcionales) |
+| RF-005 Tablero de seguimiento | 🔄 | ⏳ | ⏳ | ⏳ | ⏳ | 🔄 spec en borrador, esperando aprobación |

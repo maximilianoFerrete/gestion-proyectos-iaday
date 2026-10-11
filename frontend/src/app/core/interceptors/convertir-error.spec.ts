@@ -19,6 +19,29 @@ describe('convertirError', () => {
     expect(error.tieneCodigo('AGRUPACION_NOMBRE_DUPLICADO')).toBe(true);
   });
 
+  // RF-002 0.2, CA-32: la extensión `incidencias` se expone en ErrorApi
+  it('ProblemDetails 409 con extensión incidencias expone los códigos', () => {
+    const error = convertirError(
+      respuesta(409, {
+        status: 409,
+        codigo: 'VENCIMIENTO_ANTERIOR_A_HIJAS',
+        detail: 'Anterior a hijas.',
+        incidencias: ['PRJ-0001-16', 7, 'PRJ-0001-17'],
+      }),
+    );
+
+    expect(error.incidencias).toEqual(['PRJ-0001-16', 'PRJ-0001-17']);
+  });
+
+  // RF-002 0.2: sin la extensión, `incidencias` es vacío
+  it('ProblemDetails sin extensión incidencias devuelve lista vacía', () => {
+    const error = convertirError(
+      respuesta(409, { status: 409, codigo: 'RELACION_CIRCULAR', detail: 'Circular.' }),
+    );
+
+    expect(error.incidencias).toEqual([]);
+  });
+
   // Spec 0.3: errors con prefijo "$." y PascalCase se normalizan
   it('normaliza las claves de errors a camelCase y agrupa mensajes', () => {
     const error = convertirError(

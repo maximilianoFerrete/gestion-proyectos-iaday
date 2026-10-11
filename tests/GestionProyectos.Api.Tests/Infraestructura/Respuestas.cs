@@ -2,8 +2,11 @@ using System.Text.Json;
 using GestionProyectos.Application.Agrupaciones;
 using GestionProyectos.Application.Comun;
 using GestionProyectos.Application.EstadosProyecto;
+using GestionProyectos.Application.Incidencias;
 using GestionProyectos.Application.Personas;
 using GestionProyectos.Application.Proyectos;
+using GestionProyectos.Application.RelacionesTiposIncidencia;
+using GestionProyectos.Application.TiposIncidencia;
 
 namespace GestionProyectos.Api.Tests.Infraestructura;
 
@@ -13,10 +16,14 @@ namespace GestionProyectos.Api.Tests.Infraestructura;
 /// <remarks>
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (tests RF-001)
+/// Modificado: 2026-10-10 - Lee la extensión "incidencias" (tests RF-002, 0.2)
 /// </remarks>
 public sealed record Problema(int Status, string? Codigo, string? Detail, string? Title,
     IReadOnlyDictionary<string, string[]> Errors)
 {
+    /// <summary>Extensión "incidencias" (códigos afectados) o null si no viene.</summary>
+    public string[]? Incidencias { get; init; }
+
     /// <summary>Lee el cuerpo ProblemDetails de la respuesta.</summary>
     public static async Task<Problema> LeerAsync(HttpResponseMessage respuesta)
     {
@@ -26,7 +33,10 @@ public sealed record Problema(int Status, string? Codigo, string? Detail, string
             ? e.Deserialize<Dictionary<string, string[]>>() ?? []
             : [];
         return new Problema(raiz.GetProperty("status").GetInt32(), Texto(raiz, "codigo"),
-            Texto(raiz, "detail"), Texto(raiz, "title"), errores);
+            Texto(raiz, "detail"), Texto(raiz, "title"), errores)
+        {
+            Incidencias = raiz.TryGetProperty("incidencias", out var i) ? i.Deserialize<string[]>() : null,
+        };
     }
 
     private static string? Texto(JsonElement raiz, string propiedad) =>
@@ -40,6 +50,7 @@ public sealed record Problema(int Status, string? Codigo, string? Detail, string
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (tests RF-001)
 /// Modificado: 2026-10-09 - DTOs con CantidadIncidencias (RF-002)
+/// Modificado: 2026-10-10 - DTOs de incidencias y tipos (tests RF-002)
 /// </remarks>
 public static class Dtos
 {
@@ -62,6 +73,23 @@ public static class Dtos
     /// <summary>Persona de ejemplo.</summary>
     public static PersonaDto Persona(int id = 2, bool activo = true) =>
         new(id, "Ana Gómez", "ana.gomez@empresa.com", false, activo, Creado, null);
+
+    /// <summary>Incidencia de ejemplo del proyecto indicado.</summary>
+    public static IncidenciaDto Incidencia(int id = 16, int proyectoId = 1) =>
+        new(id, $"PRJ-0001-{id}", id, new ProyectoReferenciaIncidenciaDto(proyectoId, "PRJ-0001", "Portal", false),
+            "Validar tarjeta", "Validar número.", new TipoReferenciaDto(3, "Subtarea", true, 3),
+            new EstadoIncidenciaReferenciaDto(1, "Por hacer", true, false), new PrioridadReferenciaDto(2, "Media", 20, true),
+            null, new DateOnly(2026, 11, 20), null, false, null, [], [], Creado, null);
+
+    /// <summary>Tipo de incidencia de ejemplo.</summary>
+    public static TipoIncidenciaDto Tipo(int id = 6) =>
+        new(id, "Spike", null, new NivelReferenciaDto(3, 3, "Nivel 3"), new FlujoReferenciaDto(1, "Flujo general"),
+            true, 0, Creado, null);
+
+    /// <summary>Relación de tipos de ejemplo.</summary>
+    public static RelacionTipoIncidenciaDto Relacion(int id = 7) =>
+        new(id, new TipoReferenciaDto(2, "Historia de Usuario", true, 2), new TipoReferenciaDto(6, "Spike", true, 3),
+            Creado);
 
     /// <summary>Estado de ejemplo.</summary>
     public static EstadoProyectoDto Estado(int id = 2, bool esInicial = false, bool activo = true) =>

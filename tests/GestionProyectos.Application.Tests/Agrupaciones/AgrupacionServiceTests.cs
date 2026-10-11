@@ -7,6 +7,7 @@ using GestionProyectos.Domain.Entidades;
 using GestionProyectos.Domain.Excepciones;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 
 namespace GestionProyectos.Application.Tests.Agrupaciones;
 
@@ -17,6 +18,7 @@ namespace GestionProyectos.Application.Tests.Agrupaciones;
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (tests RF-001)
 /// Modificado: 2026-10-09 - Inyecta IIncidenciaRepository y el bloqueo del proyecto (RF-002, RN-30)
+/// Modificado: 2026-10-10 - Eliminar desasocia incidencias antes de borrar; rollback (RF-002 RN-30, CA-40)
 /// </remarks>
 public class AgrupacionServiceTests
 {
@@ -244,9 +246,9 @@ public class AgrupacionServiceTests
         await _uow.DidNotReceive().IniciarAsync(Arg.Any<CancellationToken>());
     }
 
-    // RN-30, CA-31: eliminación física dentro de IUnitOfWork con commit
+    // RN-30, CA-31; RF-002 RN-30, CA-40, spec 0.3: bloquea el proyecto, desasocia y luego borra
     [Fact]
-    public async Task EliminarAsync_Valido_EliminaDentroDeTransaccion()
+    public async Task EliminarAsync_Valido_BloqueaDesasociaYEliminaDentroDeTransaccion()
     {
         // Arrange
         ExisteProyecto();
@@ -259,9 +261,66 @@ public class AgrupacionServiceTests
         Received.InOrder(() =>
         {
             _uow.IniciarAsync(Arg.Any<CancellationToken>());
+            _incidencias.BloquearProyectoAsync(ProyectoId, Arg.Any<CancellationToken>());
+            _incidencias.DesasociarAgrupacionAsync(ProyectoId, AgrupacionId, DatosPrueba.AhoraTruncado,
+                Arg.Any<CancellationToken>());
             _agrupaciones.EliminarAsync(AgrupacionId, Arg.Any<CancellationToken>());
             _uow.ConfirmarAsync(Arg.Any<CancellationToken>());
         });
+    }
+
+    // RF-002 RN-30, RN-38: si falla el delete se revierte (la desasociación no queda persistida)
+    [Fact]
+    public async Task EliminarAsync_FallaElDelete_RevierteSinConfirmar()
+    {
+        // Arrange
+        ExisteProyecto();
+        ExisteAgrupacion();
+        _agrupaciones.EliminarAsync(AgrupacionId, Arg.Any<CancellationToken>())
+            .ThrowsAsync(new InvalidOperationException("Error de BD"));
+
+        // Act
+        var accion = () => _sut.EliminarAsync(ProyectoId, AgrupacionId, CancellationToken.None);
+
+        // Assert
+        await Assert.ThrowsAsync<InvalidOperationException>(accion);
+        await _uow.Received(1).RevertirAsync(Arg.Any<CancellationToken>());
+        await _uow.DidNotReceive().ConfirmarAsync(Arg.Any<CancellationToken>());
+    }
+
+    // RF-002 RN-36, spec 0.3: el proyecto archivado entre la lectura y el bloqueo no se modifica
+    [Fact]
+    public async Task EliminarAsync_ProyectoArchivadoAlBloquear_LanzaProyectoArchivadoSinDesasociar()
+    {
+        // Arrange
+        ExisteProyecto();
+        ExisteAgrupacion();
+        _incidencias.BloquearProyectoAsync(ProyectoId, Arg.Any<CancellationToken>())
+            .Returns(new ProyectoBloqueado(ProyectoId, "PRJ-0003", true));
+
+        // Act
+        var accion = () => _sut.EliminarAsync(ProyectoId, AgrupacionId, CancellationToken.None);
+
+        // Assert
+        await Assert.ThrowsAsync<ProyectoArchivadoException>(accion);
+        await _incidencias.DidNotReceive().DesasociarAgrupacionAsync(Arg.Any<int>(), Arg.Any<int>(),
+            Arg.Any<DateTime>(), Arg.Any<CancellationToken>());
+    }
+
+    // RF-002 CA-41: el detalle de la agrupación informa la cantidad de incidencias
+    [Fact]
+    public async Task ObtenerAsync_AgrupacionConIncidencias_DevuelveCantidadIncidencias()
+    {
+        // Arrange
+        ExisteProyecto();
+        ExisteAgrupacion();
+        _agrupaciones.ContarIncidenciasAsync(AgrupacionId, Arg.Any<CancellationToken>()).Returns(7);
+
+        // Act
+        var dto = await _sut.ObtenerAsync(ProyectoId, AgrupacionId, CancellationToken.None);
+
+        // Assert
+        Assert.Equal(7, dto.CantidadIncidencias);
     }
 
     // Contrato DELETE: 404 AGRUPACION_NO_ENCONTRADA si no existe

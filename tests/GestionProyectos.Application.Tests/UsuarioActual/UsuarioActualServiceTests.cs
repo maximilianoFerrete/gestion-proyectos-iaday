@@ -13,6 +13,7 @@ namespace GestionProyectos.Application.Tests.UsuarioActual;
 /// <remarks>
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (tests RF-001)
+/// Modificado: 2026-10-10 - Permisos del usuario actual (tests RF-002, 0.1, CA-03)
 /// </remarks>
 public class UsuarioActualServiceTests
 {
@@ -54,6 +55,51 @@ public class UsuarioActualServiceTests
 
         // Assert
         Assert.Equal(new UsuarioActualDto(true, 1, "Persona 1", "admin@gestionproyectos.local", true), dto);
+    }
+
+    // RF-002 0.1, CA-03: el admin informa sus permisos ordenados
+    [Fact]
+    public async Task ObtenerAsync_AdminConPermisos_DevuelvePermisosOrdenados()
+    {
+        // Arrange
+        Identificado(1);
+        _usuario.Permisos.Returns([Permisos.IncidenciasCambiarTipo, Permisos.ConfiguracionIncidencias]);
+        _personas.ObtenerPorIdAsync(1, Arg.Any<CancellationToken>()).Returns(DatosPrueba.Persona(1, esAdmin: true));
+        var sut = new UsuarioActualService(_usuario, _personas);
+
+        // Act
+        var dto = await sut.ObtenerAsync(CancellationToken.None);
+
+        // Assert
+        Assert.Equal(["Configuracion.Incidencias", "Incidencias.CambiarTipo"], dto.Permisos);
+    }
+
+    // RF-002 0.1, CA-03: persona no admin sin permisos → permisos vacío
+    [Fact]
+    public async Task ObtenerAsync_PersonaSinPermisos_DevuelvePermisosVacio()
+    {
+        // Arrange
+        Identificado(2);
+        _usuario.Permisos.Returns([]);
+        _personas.ObtenerPorIdAsync(2, Arg.Any<CancellationToken>()).Returns(DatosPrueba.Persona(2));
+        var sut = new UsuarioActualService(_usuario, _personas);
+
+        // Act
+        var dto = await sut.ObtenerAsync(CancellationToken.None);
+
+        // Assert
+        Assert.Empty(dto.Permisos);
+    }
+
+    // RF-002 0.1: el anónimo no tiene permisos
+    [Fact]
+    public void Anonimo_Permisos_Vacio()
+    {
+        // Act
+        var permisos = UsuarioActualDto.Anonimo.Permisos;
+
+        // Assert
+        Assert.Empty(permisos);
     }
 
     // CA-35: persona desactivada después de identificarse → 401 USUARIO_INVALIDO

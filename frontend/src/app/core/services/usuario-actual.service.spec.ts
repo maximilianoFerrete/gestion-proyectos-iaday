@@ -4,6 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import { Almacenamiento, ALMACENAMIENTO } from '../config/almacenamiento.token';
 import { API_URL } from '../config/api-url.token';
 import { errorInterceptor } from '../interceptors/error.interceptor';
+import { PERMISOS } from '../models/permisos.model';
 import {
   HEADER_USUARIO_ID,
   usuarioActualInterceptor,
@@ -37,7 +38,10 @@ function configurar(almacenamiento: Almacenamiento): void {
   });
 }
 
-/** Tests de UsuarioActualService y usuarioActualInterceptor (spec 0.4, CA-34, CA-35). */
+/**
+ * Tests de UsuarioActualService y usuarioActualInterceptor (spec 0.4, CA-34, CA-35).
+ * RF-002 0.1: `permisos` y `tienePermiso` (CA-03).
+ */
 describe('UsuarioActualService', () => {
   afterEach(() => TestBed.inject(HttpTestingController).verify());
 
@@ -109,7 +113,11 @@ describe('UsuarioActualService', () => {
     TestBed.inject(HttpTestingController)
       .expectOne('/api/usuario-actual')
       .flush(
-        { status: 401, codigo: 'USUARIO_INVALIDO', detail: 'El usuario 5 no existe o está inactivo.' },
+        {
+          status: 401,
+          codigo: 'USUARIO_INVALIDO',
+          detail: 'El usuario 5 no existe o está inactivo.',
+        },
         { status: 401, statusText: 'Unauthorized' },
       );
 
@@ -133,6 +141,90 @@ describe('UsuarioActualService', () => {
     });
 
     expect(servicio.esAdmin()).toBe(true);
+  });
+
+  // RF-002 0.1, CA-03: tienePermiso refleja los permisos de la respuesta
+  it('tienePermiso devuelve true solo para los permisos informados por la API', () => {
+    configurar(crearAlmacenamiento({ [CLAVE_USUARIO_ACTUAL]: '1' }));
+    const servicio = TestBed.inject(UsuarioActualService);
+
+    servicio.verificar();
+    TestBed.inject(HttpTestingController)
+      .expectOne('/api/usuario-actual')
+      .flush({
+        identificado: true,
+        personaId: 1,
+        nombre: 'Administrador',
+        email: 'admin@gestionproyectos.local',
+        esAdmin: true,
+        permisos: [PERMISOS.configuracionIncidencias],
+      });
+
+    expect(servicio.tienePermiso(PERMISOS.configuracionIncidencias)).toBe(true);
+    expect(servicio.tienePermiso(PERMISOS.incidenciasCambiarTipo)).toBe(false);
+  });
+
+  // RF-002 0.1, CA-03: no admin con permisos [] → sin permisos
+  it('tienePermiso devuelve false con permisos vacío', () => {
+    configurar(crearAlmacenamiento({ [CLAVE_USUARIO_ACTUAL]: '2' }));
+    const servicio = TestBed.inject(UsuarioActualService);
+
+    servicio.verificar();
+    TestBed.inject(HttpTestingController).expectOne('/api/usuario-actual').flush({
+      identificado: true,
+      personaId: 2,
+      nombre: 'Ana',
+      email: 'ana@empresa.com',
+      esAdmin: false,
+      permisos: [],
+    });
+
+    expect(servicio.tienePermiso(PERMISOS.configuracionIncidencias)).toBe(false);
+  });
+
+  // RF-002 0.1: tolera respuestas sin `permisos` (backend anterior)
+  it('tienePermiso devuelve false si la respuesta no trae permisos', () => {
+    configurar(crearAlmacenamiento({ [CLAVE_USUARIO_ACTUAL]: '1' }));
+    const servicio = TestBed.inject(UsuarioActualService);
+
+    servicio.verificar();
+    TestBed.inject(HttpTestingController).expectOne('/api/usuario-actual').flush({
+      identificado: true,
+      personaId: 1,
+      nombre: 'Administrador',
+      email: 'admin@gestionproyectos.local',
+      esAdmin: true,
+    });
+
+    expect(servicio.tienePermiso(PERMISOS.incidenciasCambiarTipo)).toBe(false);
+  });
+
+  // RF-002 0.1: al cambiar a "Sin usuario" se pierden los permisos
+  it('seleccionar(null) limpia los permisos del usuario anterior', () => {
+    configurar(crearAlmacenamiento({ [CLAVE_USUARIO_ACTUAL]: '1' }));
+    const servicio = TestBed.inject(UsuarioActualService);
+    const http = TestBed.inject(HttpTestingController);
+    servicio.verificar();
+    http.expectOne('/api/usuario-actual').flush({
+      identificado: true,
+      personaId: 1,
+      nombre: 'Administrador',
+      email: 'admin@gestionproyectos.local',
+      esAdmin: true,
+      permisos: [PERMISOS.configuracionIncidencias, PERMISOS.incidenciasCambiarTipo],
+    });
+
+    servicio.seleccionar(null);
+
+    expect(servicio.tienePermiso(PERMISOS.configuracionIncidencias)).toBe(false);
+    http.expectOne('/api/usuario-actual').flush({
+      identificado: false,
+      personaId: null,
+      nombre: null,
+      email: null,
+      esAdmin: false,
+      permisos: [],
+    });
   });
 });
 
