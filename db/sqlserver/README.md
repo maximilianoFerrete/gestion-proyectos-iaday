@@ -67,6 +67,9 @@ sqlcmd -S "(localdb)\MSSQLLocalDB" -d GestionProyectos -W -Q "SELECT * FROM dbo.
 | `S003` | Configuración de incidencias: niveles 1–3; estados Por hacer/En progreso/Hecho; "Flujo general" (Por hacer inicial → En progreso → Hecho final); tipos Épica (N1), Historia de Usuario (N2), Subtarea/Caso de Prueba/Bug (N3) con "Flujo general"; relaciones Épica→HU, HU→Subtarea/Caso de Prueba/Bug; prioridades Baja/Media (predeterminada)/Alta/Crítica |
 | `S004` | Estado de incidencia "Bloqueada" (Orden 24, categoría `BLOQUEADA`) agregado al "Flujo general" al final (ni inicial ni final, `Orden` = máx. + 1). No crea "En espera" (RF-005 DA-02) |
 
+Datos de prueba para desarrollo local (proyectos e incidencias; no los ejecuta `aplicar.ps1`):
+ver [`datos-prueba/README.md`](datos-prueba/README.md).
+
 Recrear desde cero (pierde todos los datos):
 `sqlcmd -S "(localdb)\MSSQLLocalDB" -d master -Q "ALTER DATABASE GestionProyectos SET SINGLE_USER WITH ROLLBACK IMMEDIATE; DROP DATABASE GestionProyectos"`
 y volver a ejecutar `aplicar.ps1`.
