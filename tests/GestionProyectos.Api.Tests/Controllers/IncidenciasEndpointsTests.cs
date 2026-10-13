@@ -16,6 +16,7 @@ namespace GestionProyectos.Api.Tests.Controllers;
 /// <remarks>
 /// Creado: 2026-10-10
 /// Modificado: 2026-10-10 - Versión inicial (tests RF-002)
+/// Modificado: 2026-10-11 - Estimación, árbol por ámbito y campos de RF-005 (tests RF-005)
 /// </remarks>
 public sealed class IncidenciasEndpointsTests : IDisposable
 {
@@ -195,14 +196,14 @@ public sealed class IncidenciasEndpointsTests : IDisposable
     public async Task Arbol_Proyecto_Devuelve200()
     {
         // Arrange
-        _api.ConsultasIncidencias.ObtenerArbolAsync(1, Arg.Any<CancellationToken>()).Returns([]);
+        _api.ConsultasIncidencias.ObtenerArbolAsync(1, Arg.Any<ArbolIncidenciasQuery>(), Arg.Any<CancellationToken>()).Returns([]);
 
         // Act
         var respuesta = await _api.Cliente().GetAsync($"{Base}/arbol");
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, respuesta.StatusCode);
-        await _api.ConsultasIncidencias.Received(1).ObtenerArbolAsync(1, Arg.Any<CancellationToken>());
+        await _api.ConsultasIncidencias.Received(1).ObtenerArbolAsync(1, Arg.Any<ArbolIncidenciasQuery>(), Arg.Any<CancellationToken>());
     }
 
     // CA-19: tipoId repetible y sinResponsable llegan al servicio
@@ -300,5 +301,95 @@ public sealed class IncidenciasEndpointsTests : IDisposable
         var problema = await Problema.LeerAsync(respuesta);
         Assert.Equal(CodigosError.TipoIncompatibleConHijas, problema.Codigo);
         Assert.Equal(new[] { "PRJ-0001-17" }, problema.Incidencias);
+    }
+
+    // RF-005 RN-34, CA-41: "estimacion": 2.5 en el alta llega como 2.5m al servicio
+    [Fact]
+    public async Task Crear_ConEstimacion_LlegaLaEstimacionAlServicio()
+    {
+        // Arrange
+        _api.Incidencias.CrearAsync(1, Arg.Any<CrearIncidenciaRequest>(), Arg.Any<CancellationToken>())
+            .Returns(Dtos.Incidencia(16, 1));
+
+        // Act
+        await _api.Cliente().PostAsJsonAsync(Base, new { tipoId = 3, titulo = "T", descripcion = "D", estimacion = 2.5 });
+
+        // Assert
+        await _api.Incidencias.Received(1).CrearAsync(1, Arg.Is<CrearIncidenciaRequest>(r => r.Estimacion == 2.5m),
+            Arg.Any<CancellationToken>());
+    }
+
+    // RF-005 RN-34, CA-43: "estimacion": null en la edición llega como null al servicio
+    [Fact]
+    public async Task Editar_EstimacionNull_LlegaNullAlServicio()
+    {
+        // Arrange
+        _api.Incidencias.EditarAsync(1, 15, Arg.Any<EditarIncidenciaRequest>(), Arg.Any<CancellationToken>())
+            .Returns(Dtos.Incidencia(15, 1));
+
+        // Act
+        await _api.Cliente().PutAsJsonAsync($"{Base}/15", new
+        {
+            titulo = "Pagar", descripcion = "D", estadoId = 3, prioridadId = 3, estimacion = (decimal?)null,
+        });
+
+        // Assert
+        await _api.Incidencias.Received(1).EditarAsync(1, 15, Arg.Is<EditarIncidenciaRequest>(r => r.Estimacion == null),
+            Arg.Any<CancellationToken>());
+    }
+
+    // RF-005 C-RF002-04: agrupacionId y sinAgrupacion del árbol llegan al servicio
+    [Fact]
+    public async Task Arbol_ConAmbito_PasaElAmbitoAlServicio()
+    {
+        // Arrange
+        _api.ConsultasIncidencias.ObtenerArbolAsync(1, Arg.Any<ArbolIncidenciasQuery>(), Arg.Any<CancellationToken>())
+            .Returns([]);
+
+        // Act
+        await _api.Cliente().GetAsync($"{Base}/arbol?agrupacionId=8");
+
+        // Assert
+        await _api.ConsultasIncidencias.Received(1).ObtenerArbolAsync(1, new ArbolIncidenciasQuery(8, null),
+            Arg.Any<CancellationToken>());
+    }
+
+    // RF-005 RN-01: árbol con agrupacionId y sinAgrupacion → el servicio rechaza con 400 VALIDACION
+    [Fact]
+    public async Task Arbol_AmbitosExcluyentes_Devuelve400()
+    {
+        // Arrange
+        _api.ConsultasIncidencias.ObtenerArbolAsync(1, Arg.Any<ArbolIncidenciasQuery>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new ValidationException([new ValidationFailure("AgrupacionId", "Excluyentes.")]));
+
+        // Act
+        var respuesta = await _api.Cliente().GetAsync($"{Base}/arbol?agrupacionId=8&sinAgrupacion=true");
+
+        // Assert
+        var problema = await Problema.LeerAsync(respuesta);
+        Assert.Equal((400, CodigosError.Validacion), (problema.Status, problema.Codigo));
+        Assert.True(problema.Errors.ContainsKey("agrupacionId"));
+    }
+
+    // RF-005 RN-36, CA-40: el detalle serializa estimacion, vencida y estado.categoria
+    [Fact]
+    public async Task Obtener_Detalle_SerializaEstimacionVencidaYCategoria()
+    {
+        // Arrange
+        _api.ConsultasIncidencias.ObtenerAsync(1, 15, Arg.Any<CancellationToken>()).Returns(Dtos.Incidencia(15, 1) with
+        {
+            Estimacion = 12.5m,
+            Vencida = true,
+            Estado = new Application.Comun.EstadoIncidenciaReferenciaDto(4, "Bloqueada", true, false, "BLOQUEADA"),
+        });
+
+        // Act
+        using var json = System.Text.Json.JsonDocument.Parse(await _api.Cliente().GetStringAsync($"{Base}/15"));
+
+        // Assert
+        var raiz = json.RootElement;
+        Assert.Equal(12.5m, raiz.GetProperty("estimacion").GetDecimal());
+        Assert.True(raiz.GetProperty("vencida").GetBoolean());
+        Assert.Equal("BLOQUEADA", raiz.GetProperty("estado").GetProperty("categoria").GetString());
     }
 }

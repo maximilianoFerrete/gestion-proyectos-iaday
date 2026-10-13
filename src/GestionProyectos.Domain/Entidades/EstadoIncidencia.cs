@@ -1,4 +1,6 @@
+using GestionProyectos.Domain.Comun;
 using GestionProyectos.Domain.Excepciones;
+using GestionProyectos.Domain.Reglas;
 
 namespace GestionProyectos.Domain.Entidades;
 
@@ -8,6 +10,7 @@ namespace GestionProyectos.Domain.Entidades;
 /// <remarks>
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (RF-002)
+/// Modificado: 2026-10-10 - Agrega la categoría de seguimiento (RF-005, RN-17, RN-18)
 /// </remarks>
 public class EstadoIncidencia : Entidad
 {
@@ -19,29 +22,50 @@ public class EstadoIncidencia : Entidad
 
     public bool Activo { get; private set; }
 
-    /// <summary>Crea un estado nuevo y activo.</summary>
-    public EstadoIncidencia(string nombre, string? descripcion, int orden, DateTime ahora) : base(ahora)
+    /// <summary>Categoría de seguimiento (CategoriasEstadoIncidencia) o null (RN-17).</summary>
+    public string? Categoria { get; private set; }
+
+    /// <summary>Crea un estado nuevo y activo; sin flujos, cualquier categoría es válida (RN-18).</summary>
+    public EstadoIncidencia(string nombre, string? descripcion, int orden, DateTime ahora,
+        string? categoria = null) : base(ahora)
     {
         Nombre = nombre;
         Descripcion = descripcion;
         Orden = orden;
         Activo = true;
+        Categoria = ValidarCategoria(categoria);
     }
 
     private EstadoIncidencia(int id, string nombre, string? descripcion, int orden, bool activo,
-        DateTime fechaCreacion, DateTime? fechaModificacion)
+        string? categoria, DateTime fechaCreacion, DateTime? fechaModificacion)
         : base(id, fechaCreacion, fechaModificacion)
     {
         Nombre = nombre;
         Descripcion = descripcion;
         Orden = orden;
         Activo = activo;
+        Categoria = categoria;
     }
 
     /// <summary>Reconstruye un estado leído desde la persistencia.</summary>
     public static EstadoIncidencia Reconstituir(int id, string nombre, string? descripcion, int orden,
-        bool activo, DateTime fechaCreacion, DateTime? fechaModificacion) =>
-        new(id, nombre, descripcion, orden, activo, fechaCreacion, fechaModificacion);
+        bool activo, DateTime fechaCreacion, DateTime? fechaModificacion, string? categoria = null) =>
+        new(id, nombre, descripcion, orden, activo, categoria, fechaCreacion, fechaModificacion);
+
+    /// <summary>Cambia la categoría; con categoría no puede ser inicial ni final en flujos (RN-18).</summary>
+    public void CambiarCategoria(string? categoria, IReadOnlyCollection<string> flujosDondeEsInicialOFinal,
+        DateTime ahora)
+    {
+        var nueva = ValidarCategoria(categoria);
+        if (nueva == Categoria)
+        {
+            return;
+        }
+
+        ReglasCategoriaEstado.AsegurarCategoriaAsignable(Nombre, nueva, flujosDondeEsInicialOFinal);
+        Categoria = nueva;
+        MarcarModificada(ahora);
+    }
 
     /// <summary>Edita nombre, descripción y orden (RN-10).</summary>
     public void Actualizar(string nombre, string? descripcion, int orden, DateTime ahora)
@@ -81,5 +105,15 @@ public class EstadoIncidencia : Entidad
 
         Activo = true;
         MarcarModificada(ahora);
+    }
+
+    private static string? ValidarCategoria(string? categoria)
+    {
+        if (!CategoriasEstadoIncidencia.EsValida(categoria))
+        {
+            throw new ArgumentException($"Categoría de seguimiento desconocida: {categoria}.", nameof(categoria));
+        }
+
+        return categoria;
     }
 }

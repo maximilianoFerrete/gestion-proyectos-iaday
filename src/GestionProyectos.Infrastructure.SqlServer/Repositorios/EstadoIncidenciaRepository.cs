@@ -11,13 +11,15 @@ namespace GestionProyectos.Infrastructure.SqlServer.Repositorios;
 /// <remarks>
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (RF-002)
+/// Modificado: 2026-10-10 - Categoría de seguimiento y flujos inicial/final (RF-005)
 /// </remarks>
 internal sealed class EstadoIncidenciaRepository(EjecutorSql sql) : IEstadoIncidenciaRepository
 {
-    private const string Columnas = "Id, Nombre, Descripcion, Orden, Activo, FechaCreacion, FechaModificacion";
+    private const string Columnas =
+        "Id, Nombre, Descripcion, Orden, Activo, Categoria, FechaCreacion, FechaModificacion";
 
     private const string ConsultaDtos = """
-        SELECT e.Id, e.Nombre, e.Descripcion, e.Orden, e.Activo,
+        SELECT e.Id, e.Nombre, e.Descripcion, e.Orden, e.Activo, e.Categoria,
                (SELECT COUNT(*) FROM dbo.Incidencias i WHERE i.EstadoId = e.Id) AS CantidadIncidencias
         FROM dbo.EstadosIncidencia e
         """;
@@ -102,13 +104,27 @@ internal sealed class EstadoIncidenciaRepository(EjecutorSql sql) : IEstadoIncid
     }
 
     /// <inheritdoc />
+    public Task<IReadOnlyList<string>> ListarFlujosDondeEsInicialOFinalAsync(int estadoId, CancellationToken ct)
+    {
+        const string consulta = """
+            SELECT f.Nombre
+            FROM dbo.FlujosIncidenciaEstados fe
+            INNER JOIN dbo.FlujosIncidencia f ON f.Id = fe.FlujoId
+            WHERE fe.EstadoId = @EstadoId AND (fe.EsInicial = 1 OR fe.EsFinal = 1)
+            ORDER BY f.Nombre;
+            """;
+        return sql.ConsultarAsync<string>(consulta, new { EstadoId = estadoId }, ct);
+    }
+
+    /// <inheritdoc />
     public async Task AgregarAsync(EstadoIncidencia estado, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(estado);
         const string comando = """
-            INSERT INTO dbo.EstadosIncidencia (Nombre, Descripcion, Orden, Activo, FechaCreacion, FechaModificacion)
+            INSERT INTO dbo.EstadosIncidencia
+                (Nombre, Descripcion, Orden, Activo, Categoria, FechaCreacion, FechaModificacion)
             OUTPUT INSERTED.Id
-            VALUES (@Nombre, @Descripcion, @Orden, @Activo, @FechaCreacion, @FechaModificacion);
+            VALUES (@Nombre, @Descripcion, @Orden, @Activo, @Categoria, @FechaCreacion, @FechaModificacion);
             """;
         var id = await sql.EscalarAsync<int>(comando, Parametros(estado), ct);
         estado.AsignarId(id);
@@ -121,7 +137,7 @@ internal sealed class EstadoIncidenciaRepository(EjecutorSql sql) : IEstadoIncid
         const string comando = """
             UPDATE dbo.EstadosIncidencia
             SET Nombre = @Nombre, Descripcion = @Descripcion, Orden = @Orden, Activo = @Activo,
-                FechaModificacion = @FechaModificacion
+                Categoria = @Categoria, FechaModificacion = @FechaModificacion
             WHERE Id = @Id;
             """;
         await sql.EjecutarAsync(comando, Parametros(estado), ct);
@@ -134,6 +150,7 @@ internal sealed class EstadoIncidenciaRepository(EjecutorSql sql) : IEstadoIncid
         e.Descripcion,
         e.Orden,
         e.Activo,
+        e.Categoria,
         e.FechaCreacion,
         e.FechaModificacion,
     };
@@ -144,12 +161,13 @@ internal sealed class EstadoIncidenciaRepository(EjecutorSql sql) : IEstadoIncid
     /// <remarks>
     /// Creado: 2026-10-09
     /// Modificado: 2026-10-09 - Versión inicial (RF-002)
+    /// Modificado: 2026-10-10 - Agrega Categoria (RF-005)
     /// </remarks>
     private sealed record FilaEstado(int Id, string Nombre, string? Descripcion, int Orden, bool Activo,
-        DateTime FechaCreacion, DateTime? FechaModificacion)
+        string? Categoria, DateTime FechaCreacion, DateTime? FechaModificacion)
     {
         public EstadoIncidencia AEntidad() => EstadoIncidencia.Reconstituir(Id, Nombre, Descripcion, Orden, Activo,
-            SqlUtil.Utc(FechaCreacion), SqlUtil.Utc(FechaModificacion));
+            SqlUtil.Utc(FechaCreacion), SqlUtil.Utc(FechaModificacion), Categoria);
     }
 
     /// <summary>
@@ -158,13 +176,14 @@ internal sealed class EstadoIncidenciaRepository(EjecutorSql sql) : IEstadoIncid
     /// <remarks>
     /// Creado: 2026-10-09
     /// Modificado: 2026-10-09 - Versión inicial (RF-002)
+    /// Modificado: 2026-10-10 - Agrega Categoria (RF-005)
     /// </remarks>
     private sealed record FilaEstadoDto(int Id, string Nombre, string? Descripcion, int Orden, bool Activo,
-        int CantidadIncidencias)
+        string? Categoria, int CantidadIncidencias)
     {
         public EstadoIncidenciaDto ADto(IEnumerable<FilaFlujoDeEstado> flujos) => new(Id, Nombre, Descripcion,
             Orden, Activo, CantidadIncidencias,
-            flujos.Select(f => new FlujoDeEstadoDto(f.Id, f.Nombre, f.EsInicial, f.EsFinal)).ToList());
+            flujos.Select(f => new FlujoDeEstadoDto(f.Id, f.Nombre, f.EsInicial, f.EsFinal)).ToList(), Categoria);
     }
 
     /// <summary>

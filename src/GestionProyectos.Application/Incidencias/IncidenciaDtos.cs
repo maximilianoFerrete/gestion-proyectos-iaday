@@ -8,6 +8,7 @@ namespace GestionProyectos.Application.Incidencias;
 /// <remarks>
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (RF-002)
+/// Modificado: 2026-10-10 - Agrega Vencida calculado en el servidor (RF-005, RN-36)
 /// </remarks>
 public sealed record IncidenciaReferenciaDto(
     int Id,
@@ -16,7 +17,8 @@ public sealed record IncidenciaReferenciaDto(
     TipoReferenciaDto Tipo,
     EstadoIncidenciaReferenciaDto Estado,
     PersonaReferenciaDto? Responsable,
-    DateOnly? FechaVencimiento);
+    DateOnly? FechaVencimiento,
+    bool Vencida = false);
 
 /// <summary>
 /// Referencia mínima al padre en el listado.
@@ -33,6 +35,7 @@ public sealed record PadreResumenDto(int Id, string Codigo);
 /// <remarks>
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (RF-002)
+/// Modificado: 2026-10-10 - Agrega Estimacion y Vencida (RF-005, RN-34, RN-36)
 /// </remarks>
 public sealed record IncidenciaResumenDto(
     int Id,
@@ -47,7 +50,9 @@ public sealed record IncidenciaResumenDto(
     AgrupacionReferenciaDto? Agrupacion,
     PadreResumenDto? Padre,
     int CantidadHijas,
-    DateTime FechaCreacion);
+    DateTime FechaCreacion,
+    decimal? Estimacion = null,
+    bool Vencida = false);
 
 /// <summary>
 /// Nodo plano del árbol de incidencias; el frontend arma la jerarquía con PadreId.
@@ -55,6 +60,7 @@ public sealed record IncidenciaResumenDto(
 /// <remarks>
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (RF-002)
+/// Modificado: 2026-10-10 - Agrega Vencida (RF-005, RN-36)
 /// </remarks>
 public sealed record NodoArbolIncidenciaDto(
     int Id,
@@ -66,7 +72,8 @@ public sealed record NodoArbolIncidenciaDto(
     PrioridadReferenciaDto Prioridad,
     PersonaReferenciaDto? Responsable,
     DateOnly? FechaVencimiento,
-    AgrupacionReferenciaDto? Agrupacion);
+    AgrupacionReferenciaDto? Agrupacion,
+    bool Vencida = false);
 
 /// <summary>
 /// Proyecto al que pertenece una incidencia.
@@ -92,6 +99,7 @@ public sealed record TipoHijaPermitidoDto(int Id, string Nombre);
 /// <remarks>
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (RF-002)
+/// Modificado: 2026-10-10 - Agrega Estimacion y Vencida (RF-005, RN-34, RN-36)
 /// </remarks>
 public sealed record IncidenciaDto(
     int Id,
@@ -111,7 +119,9 @@ public sealed record IncidenciaDto(
     IReadOnlyList<IncidenciaReferenciaDto> Hijas,
     IReadOnlyList<TipoHijaPermitidoDto> TiposHijaPermitidos,
     DateTime FechaCreacion,
-    DateTime? FechaModificacion);
+    DateTime? FechaModificacion,
+    decimal? Estimacion = null,
+    bool Vencida = false);
 
 /// <summary>
 /// Proyecto bloqueado al inicio de una escritura de incidencias (spec 0.3).

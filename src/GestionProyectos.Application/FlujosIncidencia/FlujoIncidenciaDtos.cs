@@ -5,14 +5,15 @@ using GestionProyectos.Domain.Entidades;
 namespace GestionProyectos.Application.FlujosIncidencia;
 
 /// <summary>
-/// Estado incluido en un flujo, con su posición y marcas.
+/// Estado incluido en un flujo, con su posición, marcas y categoría de seguimiento.
 /// </summary>
 /// <remarks>
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (RF-002)
+/// Modificado: 2026-10-10 - Agrega Categoria (RF-005, RN-18)
 /// </remarks>
 public sealed record EstadoDeFlujoDto(int EstadoId, string Nombre, bool Activo, int Orden, bool EsInicial,
-    bool EsFinal);
+    bool EsFinal, string? Categoria = null);
 
 /// <summary>
 /// Tipo de incidencia que usa un flujo.

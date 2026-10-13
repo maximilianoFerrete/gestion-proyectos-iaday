@@ -9,16 +9,17 @@ namespace GestionProyectos.Infrastructure.SqlServer.Repositorios;
 /// <remarks>
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (RF-002)
+/// Modificado: 2026-10-10 - Estimación, categoría del estado, orden por estimación y árbol por ámbito (RF-005)
 /// </remarks>
 internal static class ConsultasIncidencia
 {
     /// <summary>Columnas de una incidencia con sus referencias (tipo, estado, prioridad, etc.).</summary>
     private const string ColumnasConReferencias = """
-        i.Id, i.ProyectoId, i.Numero, i.Codigo, i.Titulo, i.PadreId, i.FechaVencimiento,
+        i.Id, i.ProyectoId, i.Numero, i.Codigo, i.Titulo, i.PadreId, i.FechaVencimiento, i.Estimacion,
                i.FechaCreacion, i.FechaModificacion,
                t.Id AS TipoId, t.Nombre AS TipoNombre, t.Activo AS TipoActivo, n.Numero AS TipoNivelNumero,
                e.Id AS EstadoId, e.Nombre AS EstadoNombre, e.Activo AS EstadoActivo,
-               CAST(ISNULL(fe.EsFinal, 0) AS BIT) AS EstadoEsFinal,
+               CAST(ISNULL(fe.EsFinal, 0) AS BIT) AS EstadoEsFinal, e.Categoria AS EstadoCategoria,
                pr.Id AS PrioridadId, pr.Nombre AS PrioridadNombre, pr.Orden AS PrioridadOrden,
                pr.Activo AS PrioridadActivo,
                r.Id AS ResponsableId, r.Nombre AS ResponsableNombre, r.Activo AS ResponsableActivo,
@@ -79,6 +80,16 @@ internal static class ConsultasIncidencia
         SELECT {ColumnasConReferencias}
         {JoinsReferencias}
         WHERE i.ProyectoId = @ProyectoId
+        ORDER BY i.Numero;
+        """;
+
+    /// <summary>Incidencias del ámbito (agrupación o sin agrupación) ordenadas por número.</summary>
+    public const string ArbolPorAmbito = $"""
+        SELECT {ColumnasConReferencias}
+        {JoinsReferencias}
+        WHERE i.ProyectoId = @ProyectoId
+          AND (@AgrupacionId IS NULL OR i.AgrupacionId = @AgrupacionId)
+          AND (@SinAgrupacion = 0 OR i.AgrupacionId IS NULL)
         ORDER BY i.Numero;
         """;
 
@@ -163,6 +174,9 @@ internal static class ConsultasIncidencia
             OrdenIncidencias.Responsable => $"r.Nombre {dir}",
             OrdenIncidencias.FechaVencimiento => $"i.FechaVencimiento {dir}",
             OrdenIncidencias.FechaCreacion => $"i.FechaCreacion {dir}",
+            // Nulos al final en ambas direcciones (CASE portable, RF-005 0.3).
+            OrdenIncidencias.Estimacion =>
+                $"CASE WHEN i.Estimacion IS NULL THEN 1 ELSE 0 END ASC, i.Estimacion {dir}",
             _ => throw new ArgumentOutOfRangeException(nameof(orden), orden, null),
         };
         return orden == OrdenIncidencias.Numero ? columnas : $"{columnas}, i.Numero {dir}";

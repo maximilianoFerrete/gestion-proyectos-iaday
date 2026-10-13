@@ -7,6 +7,7 @@ namespace GestionProyectos.Infrastructure.SqlServer.Conexion;
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (RF-001)
 /// Modificado: 2026-10-09 - Conversión de fechas DATE opcionales (RF-002)
+/// Modificado: 2026-10-10 - Normaliza la escala de DECIMAL leídos (RF-005)
 /// </remarks>
 internal static class SqlUtil
 {
@@ -43,4 +44,8 @@ internal static class SqlUtil
 
     /// <summary>Convierte un DateOnly opcional a DateTime para enviarlo como parámetro DATE.</summary>
     public static DateTime? Parametro(DateOnly? fecha) => fecha is null ? null : Parametro(fecha.Value);
+
+    /// <summary>Quita los ceros finales de un DECIMAL leído (12.50 → 12.5) para el JSON.</summary>
+    public static decimal? SinCerosFinales(decimal? valor) =>
+        valor is null ? null : valor.Value / 1.000000000000000000000000000000000m;
 }

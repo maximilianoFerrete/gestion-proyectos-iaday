@@ -15,6 +15,7 @@ namespace GestionProyectos.Application.Tests.Incidencias;
 /// <remarks>
 /// Creado: 2026-10-10
 /// Modificado: 2026-10-10 - Versión inicial (tests RF-002)
+/// Modificado: 2026-10-11 - Estimación en el alta (tests RF-005, RN-34, CA-41, CA-42)
 /// </remarks>
 public class IncidenciaServiceCrearTests : ContextoIncidenciaService
 {
@@ -411,5 +412,41 @@ public class IncidenciaServiceCrearTests : ContextoIncidenciaService
 
         // Assert
         Assert.Equal(("Pagar", "Desc"), (Agregada!.Titulo, Agregada.Descripcion));
+    }
+
+    // RF-005 RN-34, CA-41: crear con estimación 2.5 la persiste
+    [Fact]
+    public async Task CrearAsync_ConEstimacion_PersisteLaEstimacion()
+    {
+        // Act
+        await Sut().CrearAsync(ProyectoId, Request with { Estimacion = 2.5m }, CancellationToken.None);
+
+        // Assert
+        Assert.Equal(2.5m, Agregada!.Estimacion);
+    }
+
+    // RF-005 RN-34, CA-41: crear sin estimación la persiste como null (y 0 se conserva como 0)
+    [Theory]
+    [InlineData(null)]
+    [InlineData(0)]
+    public async Task CrearAsync_SinEstimacionOCero_PersisteElValor(int? estimacion)
+    {
+        // Act
+        await Sut().CrearAsync(ProyectoId, Request with { Estimacion = estimacion }, CancellationToken.None);
+
+        // Assert
+        Assert.Equal((decimal?)estimacion, Agregada!.Estimacion);
+    }
+
+    // RF-005 RN-34, CA-42: estimación negativa → ValidationException sin insertar
+    [Fact]
+    public async Task CrearAsync_EstimacionNegativa_LanzaValidationExceptionSinInsertar()
+    {
+        // Act
+        var accion = () => Sut().CrearAsync(ProyectoId, Request with { Estimacion = -1m }, CancellationToken.None);
+
+        // Assert
+        await Assert.ThrowsAsync<ValidationException>(accion);
+        await Incidencias.DidNotReceive().AgregarAsync(Arg.Any<Incidencia>(), Arg.Any<CancellationToken>());
     }
 }

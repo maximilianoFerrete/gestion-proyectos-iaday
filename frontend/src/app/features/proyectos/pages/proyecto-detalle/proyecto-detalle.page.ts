@@ -46,10 +46,11 @@ export function mensajeEliminarAgrupacion(agrupacion: AgrupacionDto): string {
 /**
  * P3 – Detalle de proyecto con sus agrupaciones. Archivar solo visible para administradores;
  * proyecto archivado: banner y sin acciones de modificación (RN-22). RF-002: botones Incidencias
- * y Árbol, y cantidad de incidencias en el diálogo de eliminar agrupación.
+ * y Árbol, y cantidad de incidencias en el diálogo de eliminar agrupación. RF-005: botón
+ * Seguimiento y acción Seguimiento por agrupación.
  *
  * Creado: 2026-10-09
- * Modificado: 2026-10-09 - Accesos a incidencias y diálogo de agrupación (RF-002)
+ * Modificado: 2026-10-10 - Accesos al seguimiento del proyecto y de cada agrupación (RF-005)
  */
 @Component({
   selector: 'app-proyecto-detalle-page',
@@ -68,6 +69,7 @@ export function mensajeEliminarAgrupacion(agrupacion: AgrupacionDto): string {
           <a class="btn" routerLink="/proyectos" [queryParams]="queryParamsListado()">Volver</a>
           <a class="btn" [routerLink]="['/proyectos', p.id, 'incidencias']">Incidencias</a>
           <a class="btn" [routerLink]="['/proyectos', p.id, 'incidencias', 'arbol']">Árbol</a>
+          <a class="btn" [routerLink]="['/proyectos', p.id, 'seguimiento']">Seguimiento</a>
           @if (!p.archivado) {
             <a class="btn" [routerLink]="['/proyectos', p.id, 'editar']">Editar</a>
             @if (esAdmin()) {

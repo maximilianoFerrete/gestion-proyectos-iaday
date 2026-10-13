@@ -8,13 +8,15 @@ namespace GestionProyectos.Domain.Entidades;
 /// <remarks>
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (RF-002)
+/// Modificado: 2026-10-10 - Agrega Estimacion en horas (RF-005, C-RF002-01)
 /// </remarks>
 public sealed record DatosIncidencia(
     string Titulo,
     string Descripcion,
     int PrioridadId,
     int? ResponsableId,
-    DateOnly? FechaVencimiento);
+    DateOnly? FechaVencimiento,
+    decimal? Estimacion = null);
 
 /// <summary>
 /// Posición de una incidencia en la jerarquía: padre y agrupación (objeto de valor inmutable).
@@ -31,6 +33,7 @@ public sealed record UbicacionIncidencia(int? PadreId, int? AgrupacionId);
 /// <remarks>
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (RF-002)
+/// Modificado: 2026-10-10 - Agrega Estimacion (RF-005, RN-34)
 /// </remarks>
 public class Incidencia : Entidad
 {
@@ -53,6 +56,9 @@ public class Incidencia : Entidad
     public int? ResponsableId { get; private set; }
 
     public DateOnly? FechaVencimiento { get; private set; }
+
+    /// <summary>Estimación en horas o null si no se estimó (RN-34).</summary>
+    public decimal? Estimacion { get; private set; }
 
     public int? AgrupacionId { get; private set; }
 
@@ -135,6 +141,7 @@ public class Incidencia : Entidad
         PrioridadId = datos.PrioridadId;
         ResponsableId = datos.ResponsableId;
         FechaVencimiento = datos.FechaVencimiento;
+        Estimacion = datos.Estimacion;
     }
 
     private void AplicarUbicacion(UbicacionIncidencia ubicacion)

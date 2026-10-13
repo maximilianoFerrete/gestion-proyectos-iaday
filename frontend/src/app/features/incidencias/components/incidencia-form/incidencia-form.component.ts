@@ -21,6 +21,7 @@ import {
 } from '../../../../shared/forms/errores-servidor';
 import { mensajesVisibles, traducirErrores } from '../../../../shared/forms/mensajes-error';
 import { formatearFecha } from '../../../../shared/utils/fechas';
+import { maxDecimales } from '../../../../shared/validators/numero.validators';
 import {
   longitudMaxima,
   recortar,
@@ -35,7 +36,9 @@ import { AgrupacionDto } from '../../../proyectos/models/agrupacion.model';
 import {
   IncidenciaDto,
   IncidenciaResumenDto,
+  LIMITES_ESTIMACION,
   LIMITES_INCIDENCIA,
+  MENSAJES_ESTIMACION,
 } from '../../models/incidencia.model';
 import { ValoresIncidenciaForm } from '../../utils/incidencia-request';
 import {
@@ -79,10 +82,10 @@ export const DEBOUNCE_BUSQUEDA_PADRE_MS = 300;
  * Formulario de incidencia (I4 alta / I5 edición). Padre con buscador; Tipo limitado a los hijos
  * permitidos del tipo del padre (alta) o en solo lectura (edición); Estado solo en edición;
  * Agrupación deshabilitada si hay padre (se hereda, RN-28); Vencimiento validado contra el del
- * padre (RN-31).
+ * padre (RN-31). Estimación opcional en horas (RF-005 RN-34).
  *
  * Creado: 2026-10-09
- * Modificado: 2026-10-09 - Creación inicial (RF-002)
+ * Modificado: 2026-10-10 - Campo Estimación con sus validaciones (RF-005)
  */
 @Component({
   selector: 'app-incidencia-form',
@@ -120,6 +123,7 @@ export class IncidenciaFormComponent implements OnInit {
   readonly cancelar = output<void>();
 
   readonly limites = LIMITES_INCIDENCIA;
+  readonly limitesEstimacion = LIMITES_ESTIMACION;
   readonly erroresGenerales = signal<readonly string[]>([]);
   /** Padre elegido (null = sin padre). */
   readonly padre = signal<PadreSeleccionado | null>(null);
@@ -139,6 +143,11 @@ export class IncidenciaFormComponent implements OnInit {
       vencimientoNoPosteriorAlPadre(() => this.padre()?.fechaVencimiento ?? null),
     ]),
     agrupacionId: this.fb.control<number | null>(null),
+    estimacion: this.fb.control<number | null>(null, [
+      Validators.min(LIMITES_ESTIMACION.min),
+      Validators.max(LIMITES_ESTIMACION.max),
+      maxDecimales(LIMITES_ESTIMACION.decimales),
+    ]),
   });
   /** Texto del buscador de padre (fuera del grupo: no se envía). */
   readonly busquedaPadre = this.fb.control('');
@@ -244,6 +253,26 @@ export class IncidenciaFormComponent implements OnInit {
     return interactuado ? [...mensajes, ...traducirErrores(otros, 'El vencimiento')] : mensajes;
   }
 
+  /** Errores de Estimación con los textos de la spec (RF-005 CA-42). */
+  erroresEstimacion(): string[] {
+    const control = this.form.controls.estimacion;
+    if (!(control.touched || control.dirty) || !control.errors) {
+      return [];
+    }
+    const { min, max, maxDecimales: decimales, ...otros } = control.errors;
+    const mensajes: string[] = [];
+    if (min) {
+      mensajes.push(MENSAJES_ESTIMACION.negativa);
+    }
+    if (decimales) {
+      mensajes.push(MENSAJES_ESTIMACION.decimales);
+    }
+    if (max) {
+      mensajes.push(MENSAJES_ESTIMACION.maximo);
+    }
+    return [...mensajes, ...traducirErrores(otros, 'La estimación')];
+  }
+
   /** Fecha `dd/MM/yyyy` para mostrar. */
   fecha(valor: string | null): string {
     return valor ? formatearFecha(valor) : 'sin vencimiento';
@@ -289,6 +318,7 @@ export class IncidenciaFormComponent implements OnInit {
       fechaVencimiento: v.fechaVencimiento.length > 0 ? v.fechaVencimiento : null,
       agrupacionId: padreId === null ? v.agrupacionId : null,
       padreId,
+      estimacion: typeof v.estimacion === 'number' ? v.estimacion : null,
     });
   }
 
@@ -319,6 +349,7 @@ export class IncidenciaFormComponent implements OnInit {
       responsableId: incidencia.responsable?.id ?? null,
       fechaVencimiento: incidencia.fechaVencimiento ?? '',
       agrupacionId: incidencia.agrupacion?.id ?? null,
+      estimacion: incidencia.estimacion ?? null,
     });
     this.aplicarAgrupacionHeredada(padre);
   }

@@ -7,6 +7,7 @@ namespace GestionProyectos.Domain.Excepciones;
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (RF-001)
 /// Modificado: 2026-10-09 - Agrega los códigos de incidencias y su configuración (RF-002)
+/// Modificado: 2026-10-10 - Agrega ESTADO_CATEGORIA_INCOMPATIBLE (RF-005, RN-18)
 /// </remarks>
 public static class CodigosError
 {
@@ -68,4 +69,7 @@ public static class CodigosError
     public const string RelacionCircular = "RELACION_CIRCULAR";
     public const string TipoIncompatibleConHijas = "TIPO_INCOMPATIBLE_CON_HIJAS";
     public const string VencimientoAnteriorAHijas = "VENCIMIENTO_ANTERIOR_A_HIJAS";
+
+    // RF-005: 409
+    public const string EstadoCategoriaIncompatible = "ESTADO_CATEGORIA_INCOMPATIBLE";
 }

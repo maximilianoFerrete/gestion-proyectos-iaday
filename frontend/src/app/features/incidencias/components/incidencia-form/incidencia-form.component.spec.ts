@@ -151,10 +151,12 @@ const SUBTAREA_EN_EDICION: IncidenciaDto = {
   titulo: 'Validar tarjeta',
   descripcion: 'Validar número.',
   tipo: { id: SUBTAREA.id, nombre: SUBTAREA.nombre, activo: true, nivelNumero: 3 },
-  estado: { id: 2, nombre: 'En progreso', activo: false, esFinal: false },
+  estado: { id: 2, nombre: 'En progreso', activo: false, esFinal: false, categoria: null },
   prioridad: { id: 2, nombre: 'Media', orden: 20, activo: true },
   responsable: null,
   fechaVencimiento: '2026-11-20',
+  vencida: false,
+  estimacion: null,
   agrupacion: { id: 8, nombre: 'Módulo pagos' },
   agrupacionHeredada: true,
   padre: {
@@ -162,9 +164,10 @@ const SUBTAREA_EN_EDICION: IncidenciaDto = {
     codigo: 'PRJ-0001-15',
     titulo: 'Pagar con tarjeta',
     tipo: { id: HU.id, nombre: HU.nombre, activo: true, nivelNumero: 2 },
-    estado: { id: 1, nombre: 'Por hacer', activo: true, esFinal: false },
+    estado: { id: 1, nombre: 'Por hacer', activo: true, esFinal: false, categoria: null },
     responsable: null,
     fechaVencimiento: '2026-11-30',
+    vencida: false,
   },
   hijas: [],
   tiposHijaPermitidos: [],
@@ -424,5 +427,119 @@ describe('IncidenciaFormComponent', () => {
     expect(raiz.querySelector('#incidencia-vencimiento-error')?.textContent).toContain(
       'El vencimiento 2026-12-01 es posterior al del padre PRJ-0001-15 (2026-11-30).',
     );
+  });
+
+  describe('Estimación (RF-005)', () => {
+    /** Mensajes de error visibles bajo el campo Estimación. */
+    function errorEstimacion(raiz: HTMLElement): string {
+      return raiz.querySelector('#incidencia-estimacion-error')?.textContent?.trim() ?? '';
+    }
+
+    /** Escribe un valor numérico en Estimación como lo haría el usuario. */
+    async function escribirEstimacion(raiz: HTMLElement, valor: string): Promise<void> {
+      escribir(raiz, 'incidencia-estimacion', valor);
+      await fixture.whenStable();
+    }
+
+    // "Cambios en I4/I5": input number opcional con min 0, step 0.25 y placeholder
+    it('el campo Estimación es number con min 0, step 0.25 y placeholder "Sin estimar"', async () => {
+      const raiz = await crear('alta');
+
+      const campo = raiz.querySelector<HTMLInputElement>('#incidencia-estimacion')!;
+      expect([campo.type, campo.min, campo.step, campo.placeholder]).toEqual([
+        'number',
+        '0',
+        '0.25',
+        'Sin estimar',
+      ]);
+    });
+
+    // RN-34, CA-42: valores inválidos muestran el mensaje y dejan el formulario inválido
+    it.each([
+      ['-1', 'La estimación no puede ser negativa.'],
+      ['1.234', 'La estimación admite hasta 2 decimales.'],
+      ['10000000', 'La estimación no puede superar 9.999.999,99 horas.'],
+    ])('estimación %s muestra "%s"', async (valor, mensaje) => {
+      const raiz = await crear('alta');
+
+      await escribirEstimacion(raiz, valor);
+
+      expect(errorEstimacion(raiz)).toContain(mensaje);
+      expect(fixture.componentInstance.form.invalid).toBe(true);
+    });
+
+    // CA-42: con una estimación inválida el formulario no envía el request
+    it('con estimación inválida enviar no emite guardar', async () => {
+      const raiz = await crear('alta');
+      const componente = fixture.componentInstance;
+      let emitido = false;
+      componente.guardar.subscribe(() => (emitido = true));
+      componente.form.patchValue({ tipoId: HU.id, titulo: 'Pagar', descripcion: 'Desc' });
+      await escribirEstimacion(raiz, '-1');
+
+      componente.enviar();
+
+      expect(emitido).toBe(false);
+    });
+
+    // RN-34, CA-41: 2.5 se emite como número
+    it('una estimación de 2,5 se emite como 2.5', async () => {
+      const raiz = await crear('alta');
+      const componente = fixture.componentInstance;
+      let emitido: ValoresIncidenciaForm | undefined;
+      componente.guardar.subscribe((v) => (emitido = v));
+      componente.form.patchValue({ tipoId: HU.id, titulo: 'Pagar', descripcion: 'Desc' });
+      await escribirEstimacion(raiz, '2.5');
+
+      componente.enviar();
+
+      expect(emitido?.estimacion).toBe(2.5);
+    });
+
+    // RN-34, CA-43: campo vacío se envía como null
+    it('con el campo vacío emite estimacion null', async () => {
+      await crear('alta');
+      const componente = fixture.componentInstance;
+      let emitido: ValoresIncidenciaForm | undefined;
+      componente.guardar.subscribe((v) => (emitido = v));
+      componente.form.patchValue({ tipoId: HU.id, titulo: 'Pagar', descripcion: 'Desc' });
+
+      componente.enviar();
+
+      expect(emitido).toHaveProperty('estimacion', null);
+    });
+
+    // RN-34: en edición precarga la estimación actual
+    it('en edición precarga la estimación de la incidencia', async () => {
+      await crear('edicion', { incidencia: { ...SUBTAREA_EN_EDICION, estimacion: 8 } });
+
+      expect(fixture.componentInstance.form.controls.estimacion.value).toBe(8);
+    });
+
+    // CA-43: en edición, vaciar el campo envía estimacion null
+    it('en edición, vaciar la estimación emite null', async () => {
+      const raiz = await crear('edicion', { incidencia: { ...SUBTAREA_EN_EDICION, estimacion: 8 } });
+      const componente = fixture.componentInstance;
+      let emitido: ValoresIncidenciaForm | undefined;
+      componente.guardar.subscribe((v) => (emitido = v));
+      await escribirEstimacion(raiz, '');
+
+      componente.enviar();
+
+      expect(emitido).toHaveProperty('estimacion', null);
+    });
+
+    // CA-42: un 400 con clave estimacion se muestra bajo el campo
+    it('error del servidor en estimacion se muestra bajo el campo', async () => {
+      const raiz = await crear('edicion', { incidencia: SUBTAREA_EN_EDICION });
+
+      fixture.componentRef.setInput('errorServidor', {
+        campos: { estimacion: ['La estimación no puede ser negativa.'] },
+        general: null,
+      });
+      await fixture.whenStable();
+
+      expect(errorEstimacion(raiz)).toContain('La estimación no puede ser negativa.');
+    });
   });
 });

@@ -6,6 +6,7 @@ namespace GestionProyectos.Application.Abstracciones;
 /// <remarks>
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (RF-002)
+/// Modificado: 2026-10-10 - Agrega Proyectos.ConfigurarTablero (RF-005, RN-31)
 /// </remarks>
 public static class Permisos
 {
@@ -15,6 +16,10 @@ public static class Permisos
     /// <summary>Cambiar el tipo de una incidencia (RN-02).</summary>
     public const string IncidenciasCambiarTipo = "Incidencias.CambiarTipo";
 
+    /// <summary>Modificar la configuración de columnas del tablero de un proyecto (RF-005 RN-31).</summary>
+    public const string ProyectosConfigurarTablero = "Proyectos.ConfigurarTablero";
+
     /// <summary>Todos los permisos conocidos.</summary>
-    public static IReadOnlyList<string> Todos { get; } = [ConfiguracionIncidencias, IncidenciasCambiarTipo];
+    public static IReadOnlyList<string> Todos { get; } =
+        [ConfiguracionIncidencias, IncidenciasCambiarTipo, ProyectosConfigurarTablero];
 }

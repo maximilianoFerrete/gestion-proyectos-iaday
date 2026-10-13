@@ -37,6 +37,7 @@ public interface IFlujoIncidenciaService
 /// <remarks>
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (RF-002)
+/// Modificado: 2026-10-10 - Estados con categoría no pueden ser inicial ni final (RF-005, RN-18)
 /// </remarks>
 public class FlujoIncidenciaService(
     IFlujoIncidenciaRepository repositorio,
@@ -59,7 +60,7 @@ public class FlujoIncidenciaService(
     {
         var datos = await PrepararAsync(request, ct);
         var composicion = datos.AComposicion();
-        await AsegurarEstadosAsignablesAsync(composicion, null, ct);
+        await AsegurarEstadosAsignablesAsync(datos.Nombre!, composicion, null, ct);
         await AsegurarNombreDisponibleAsync(datos.Nombre!, null, ct);
 
         var flujo = new FlujoIncidencia(datos.Nombre!, datos.Descripcion, composicion, reloj.AhoraUtc());
@@ -74,7 +75,7 @@ public class FlujoIncidenciaService(
         var datos = await PrepararAsync(request, ct);
         var flujo = await repositorio.ObtenerPorIdAsync(id, ct) ?? throw NoEncontrado(id);
         var composicion = datos.AComposicion();
-        await AsegurarEstadosAsignablesAsync(composicion, flujo, ct);
+        await AsegurarEstadosAsignablesAsync(datos.Nombre!, composicion, flujo, ct);
         await AsegurarNombreDisponibleAsync(datos.Nombre!, id, ct);
 
         await unitOfWork.EjecutarEnTransaccionAsync(async () =>
@@ -98,11 +99,12 @@ public class FlujoIncidenciaService(
         return datos;
     }
 
-    private async Task AsegurarEstadosAsignablesAsync(IReadOnlyList<EstadoEnFlujo> composicion,
+    private async Task AsegurarEstadosAsignablesAsync(string nombreFlujo, IReadOnlyList<EstadoEnFlujo> composicion,
         FlujoIncidencia? flujoActual, CancellationToken ct)
     {
         var existentes = await estados.ListarPorIdsAsync(composicion.Select(e => e.EstadoId).ToList(), ct);
         ReglasConfiguracionIncidencias.AsegurarEstadosAsignables(composicion, existentes, flujoActual);
+        ReglasCategoriaEstado.AsegurarComposicionCompatible(nombreFlujo, composicion, existentes);
     }
 
     private static EntidadNoEncontradaException NoEncontrado(int id) =>

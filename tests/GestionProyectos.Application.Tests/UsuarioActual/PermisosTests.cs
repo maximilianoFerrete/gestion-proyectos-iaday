@@ -11,21 +11,23 @@ namespace GestionProyectos.Application.Tests.UsuarioActual;
 /// <remarks>
 /// Creado: 2026-10-10
 /// Modificado: 2026-10-10 - Versión inicial (tests RF-002)
+/// Modificado: 2026-10-11 - Incluye Proyectos.ConfigurarTablero (tests RF-005, RN-31)
 /// </remarks>
 public class PermisosTests
 {
     private readonly ResolutorPermisosPorAdministrador _resolutor = new();
 
-    // RN-03, CA-03: un administrador tiene todos los permisos
+    // RN-03, CA-03 (RF-002) y RF-005 RN-31: un administrador tiene todos los permisos
     [Fact]
-    public async Task ObtenerPermisosAsync_Admin_DevuelveAmbosPermisos()
+    public async Task ObtenerPermisosAsync_Admin_DevuelveLosTresPermisos()
     {
         // Act
         var permisos = await _resolutor.ObtenerPermisosAsync(
             new IdentidadUsuario(1, "Administrador", "admin@gestionproyectos.local", true), CancellationToken.None);
 
         // Assert
-        Assert.Equal([Permisos.ConfiguracionIncidencias, Permisos.IncidenciasCambiarTipo], permisos.Order());
+        Assert.Equal([Permisos.ConfiguracionIncidencias, Permisos.IncidenciasCambiarTipo,
+            Permisos.ProyectosConfigurarTablero], permisos.Order());
     }
 
     // RN-03, CA-03: una persona no admin no tiene permisos
@@ -40,15 +42,15 @@ public class PermisosTests
         Assert.Empty(permisos);
     }
 
-    // Spec 0.1: Permisos.Todos contiene exactamente los dos permisos del RF
+    // Spec RF-002 0.1 y RF-005 "Nuevo permiso": Permisos.Todos contiene exactamente los tres permisos
     [Fact]
-    public void Todos_Constantes_ContieneLosDosPermisos()
+    public void Todos_Constantes_ContieneLosTresPermisos()
     {
         // Act
         var todos = Permisos.Todos;
 
         // Assert
-        Assert.Equal(["Configuracion.Incidencias", "Incidencias.CambiarTipo"], todos);
+        Assert.Equal(["Configuracion.Incidencias", "Incidencias.CambiarTipo", "Proyectos.ConfigurarTablero"], todos);
     }
 
     // Spec 0.1: AsegurarPermiso con usuario anónimo → 401

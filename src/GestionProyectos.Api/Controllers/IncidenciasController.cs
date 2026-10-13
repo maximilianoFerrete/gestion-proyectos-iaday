@@ -12,6 +12,7 @@ namespace GestionProyectos.Api.Controllers;
 /// <remarks>
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (RF-002)
+/// Modificado: 2026-10-10 - Árbol filtrable por ámbito (RF-005, C-RF002-04)
 /// </remarks>
 [ApiController]
 [Route("api/proyectos/{proyectoId:int}/incidencias")]
@@ -28,13 +29,14 @@ public sealed class IncidenciasController(IIncidenciaService servicio, IIncidenc
         [FromQuery] ListarIncidenciasQuery query, CancellationToken ct) =>
         Ok(await consultas.ListarAsync(proyectoId, query, ct));
 
-    /// <summary>Devuelve todas las incidencias del proyecto en lista plana (árbol por padreId).</summary>
+    /// <summary>Incidencias del proyecto o de su ámbito en lista plana (árbol por padreId).</summary>
     [HttpGet("arbol")]
     [ProducesResponseType<IReadOnlyList<NodoArbolIncidenciaDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<IReadOnlyList<NodoArbolIncidenciaDto>>> Arbol(int proyectoId,
-        CancellationToken ct) =>
-        Ok(await consultas.ObtenerArbolAsync(proyectoId, ct));
+        [FromQuery] ArbolIncidenciasQuery query, CancellationToken ct) =>
+        Ok(await consultas.ObtenerArbolAsync(proyectoId, query, ct));
 
     /// <summary>Obtiene el detalle de una incidencia del proyecto.</summary>
     [HttpGet("{id:int}")]

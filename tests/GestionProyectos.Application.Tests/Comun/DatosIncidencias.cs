@@ -13,6 +13,7 @@ namespace GestionProyectos.Application.Tests.Comun;
 /// <remarks>
 /// Creado: 2026-10-10
 /// Modificado: 2026-10-10 - Versión inicial (tests RF-002)
+/// Modificado: 2026-10-11 - Estado con categoría e incidencia con estimación (tests RF-005)
 /// </remarks>
 internal static class DatosIncidencias
 {
@@ -35,9 +36,10 @@ internal static class DatosIncidencias
             [new EstadoEnFlujo(Nuevo, 1, true, false), new EstadoEnFlujo(Hecho, 2, false, true)],
             DatosPrueba.FechaAnterior, null);
 
-    /// <summary>Crea un estado de incidencia persistido.</summary>
-    public static EstadoIncidencia Estado(int id, string nombre = "Estado", bool activo = true, int orden = 10) =>
-        EstadoIncidencia.Reconstituir(id, nombre, null, orden, activo, DatosPrueba.FechaAnterior, null);
+    /// <summary>Crea un estado de incidencia persistido (categoría de seguimiento opcional, RF-005).</summary>
+    public static EstadoIncidencia Estado(int id, string nombre = "Estado", bool activo = true, int orden = 10,
+        string? categoria = null) =>
+        EstadoIncidencia.Reconstituir(id, nombre, null, orden, activo, DatosPrueba.FechaAnterior, null, categoria);
 
     /// <summary>Crea un tipo de incidencia persistido.</summary>
     public static TipoIncidencia Tipo(int id, string nombre = "Tipo", int nivelId = 2, int flujoId = FlujoGeneral,
@@ -57,9 +59,9 @@ internal static class DatosIncidencias
     /// <summary>Crea una incidencia persistida.</summary>
     public static Incidencia Incidencia(int id, int proyectoId = 1, int tipoId = 2, int estadoId = PorHacer,
         int prioridadId = 2, int? responsableId = null, DateOnly? vencimiento = null, int? agrupacionId = null,
-        int? padreId = null, string? codigo = null) =>
+        int? padreId = null, string? codigo = null, decimal? estimacion = null) =>
         Domain.Entidades.Incidencia.Reconstituir(id, proyectoId, id, codigo ?? $"PRJ-0001-{id}", tipoId, estadoId,
-            new DatosIncidencia("Título", "Descripción", prioridadId, responsableId, vencimiento),
+            new DatosIncidencia("Título", "Descripción", prioridadId, responsableId, vencimiento, estimacion),
             new UbicacionIncidencia(padreId, agrupacionId), DatosPrueba.FechaAnterior, null);
 
     /// <summary>Hija directa para las reglas de jerarquía.</summary>

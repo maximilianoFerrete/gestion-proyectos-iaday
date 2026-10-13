@@ -15,8 +15,10 @@ public sealed record TipoReferenciaDto(int Id, string Nombre, bool Activo, int N
 /// <remarks>
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (RF-002)
+/// Modificado: 2026-10-10 - Agrega Categoria de seguimiento (RF-005, C-RF002-03)
 /// </remarks>
-public sealed record EstadoIncidenciaReferenciaDto(int Id, string Nombre, bool Activo, bool EsFinal);
+public sealed record EstadoIncidenciaReferenciaDto(int Id, string Nombre, bool Activo, bool EsFinal,
+    string? Categoria = null);
 
 /// <summary>
 /// Referencia resumida a una prioridad de incidencia.

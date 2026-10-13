@@ -230,6 +230,23 @@
     </div>
   </div>
 
+  <div class="campo campo-corto">
+    <label for="incidencia-estimacion">Estimación (horas)</label>
+    <input
+      id="incidencia-estimacion"
+      type="number"
+      formControlName="estimacion"
+      [min]="limitesEstimacion.min"
+      [max]="limitesEstimacion.max"
+      [step]="limitesEstimacion.paso"
+      placeholder="Sin estimar"
+      inputmode="decimal"
+      [attr.aria-invalid]="erroresEstimacion().length > 0"
+      aria-describedby="incidencia-estimacion-error"
+    />
+    <app-campo-error [mensajes]="erroresEstimacion()" idError="incidencia-estimacion-error" />
+  </div>
+
   <div class="campo">
     <label for="incidencia-agrupacion">Agrupación</label>
     <select

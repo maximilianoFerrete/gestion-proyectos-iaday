@@ -1,6 +1,8 @@
 using System.Net;
 using System.Net.Http.Json;
 using GestionProyectos.Api.Tests.Infraestructura;
+using GestionProyectos.Application.EstadosIncidencia;
+using GestionProyectos.Application.FlujosIncidencia;
 using GestionProyectos.Application.RelacionesTiposIncidencia;
 using GestionProyectos.Application.TiposIncidencia;
 using GestionProyectos.Domain.Excepciones;
@@ -15,6 +17,7 @@ namespace GestionProyectos.Api.Tests.Controllers;
 /// <remarks>
 /// Creado: 2026-10-10
 /// Modificado: 2026-10-10 - Versión inicial (tests RF-002)
+/// Modificado: 2026-10-11 - Categoría de estados y RN-18 en flujos (tests RF-005)
 /// </remarks>
 public sealed class ConfiguracionIncidenciasEndpointsTests : IDisposable
 {
@@ -171,5 +174,52 @@ public sealed class ConfiguracionIncidenciasEndpointsTests : IDisposable
         // Assert
         Assert.Equal(HttpStatusCode.Conflict, respuesta.StatusCode);
         Assert.Equal(CodigosError.TipoFlujoIncompatible, (await Problema.LeerAsync(respuesta)).Codigo);
+    }
+
+    // RF-005 RN-18, CA-39: PUT estado con categoría incompatible → 409 ESTADO_CATEGORIA_INCOMPATIBLE
+    [Fact]
+    public async Task EditarEstado_CategoriaIncompatible_Devuelve409ConCodigo()
+    {
+        // Arrange
+        _api.EstadosIncidencia.EditarAsync(3, Arg.Any<EstadoIncidenciaRequest>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new ConflictoException(CodigosError.EstadoCategoriaIncompatible, "Incompatible."));
+
+        // Act
+        var respuesta = await _api.Cliente(ApiFactory.IdAdmin.ToString()).PutAsJsonAsync("/api/estados-incidencia/3",
+            new { nombre = "Hecho", descripcion = (string?)null, orden = 30, categoria = "BLOQUEADA" });
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Conflict, respuesta.StatusCode);
+        Assert.Equal("ESTADO_CATEGORIA_INCOMPATIBLE", (await Problema.LeerAsync(respuesta)).Codigo);
+    }
+
+    // RF-005 RN-17: la categoría del request de estado llega al servicio
+    [Fact]
+    public async Task CrearEstado_ConCategoria_LlegaLaCategoriaAlServicio()
+    {
+        // Act
+        await _api.Cliente(ApiFactory.IdAdmin.ToString()).PostAsJsonAsync("/api/estados-incidencia",
+            new { nombre = "Esperando cliente", descripcion = "Aguarda.", orden = 22, categoria = "EN_ESPERA" });
+
+        // Assert
+        await _api.EstadosIncidencia.Received(1).CrearAsync(
+            new EstadoIncidenciaRequest("Esperando cliente", "Aguarda.", 22, "EN_ESPERA"), Arg.Any<CancellationToken>());
+    }
+
+    // RF-005 RN-18 (b), CA-39: POST flujo con estado con categoría como final → 409 con código
+    [Fact]
+    public async Task CrearFlujo_CategoriaIncompatible_Devuelve409ConCodigo()
+    {
+        // Arrange
+        _api.Flujos.CrearAsync(Arg.Any<FlujoIncidenciaRequest>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new ConflictoException(CodigosError.EstadoCategoriaIncompatible, "Incompatible."));
+
+        // Act
+        var respuesta = await _api.Cliente(ApiFactory.IdAdmin.ToString()).PostAsJsonAsync("/api/flujos-incidencia",
+            new { nombre = "F", descripcion = (string?)null, estados = new[] { new { estadoId = 4, esInicial = false, esFinal = true } } });
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Conflict, respuesta.StatusCode);
+        Assert.Equal("ESTADO_CATEGORIA_INCOMPATIBLE", (await Problema.LeerAsync(respuesta)).Codigo);
     }
 }

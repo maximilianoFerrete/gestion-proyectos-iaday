@@ -12,10 +12,10 @@ export function truncar(texto: string, largo = LARGO_DESCRIPCION_TRUNCADA): stri
 
 /**
  * Sección Agrupaciones del detalle de proyecto (P3). En solo lectura (proyecto archivado)
- * oculta Nueva / Editar / Eliminar.
+ * oculta Nueva / Editar / Eliminar; la acción Seguimiento (RF-005) está siempre disponible.
  *
  * Creado: 2026-10-09
- * Modificado: 2026-10-09 - Columna Incidencias (RF-002)
+ * Modificado: 2026-10-10 - Acción Seguimiento por agrupación (RF-005)
  */
 @Component({
   selector: 'app-agrupaciones-lista',
@@ -46,9 +46,7 @@ export function truncar(texto: string, largo = LARGO_DESCRIPCION_TRUNCADA): stri
               <th scope="col">Nombre</th>
               <th scope="col">Descripción</th>
               <th scope="col">Incidencias</th>
-              @if (!soloLectura()) {
-                <th scope="col"><span class="sr-only">Acciones</span></th>
-              }
+              <th scope="col"><span class="sr-only">Acciones</span></th>
             </tr>
           </thead>
           <tbody>
@@ -57,8 +55,16 @@ export function truncar(texto: string, largo = LARGO_DESCRIPCION_TRUNCADA): stri
                 <td>{{ agrupacion.nombre }}</td>
                 <td [title]="agrupacion.descripcion">{{ truncar(agrupacion.descripcion) }}</td>
                 <td>{{ agrupacion.cantidadIncidencias }}</td>
-                @if (!soloLectura()) {
-                  <td class="acciones-fila">
+                <td class="acciones-fila">
+                  <a
+                    class="btn btn-chico"
+                    [routerLink]="['/proyectos', proyectoId(), 'seguimiento']"
+                    [queryParams]="{ agrupacionId: agrupacion.id }"
+                    [attr.aria-label]="'Seguimiento de la agrupación ' + agrupacion.nombre"
+                  >
+                    Seguimiento
+                  </a>
+                  @if (!soloLectura()) {
                     <a
                       class="btn btn-chico"
                       [routerLink]="[
@@ -80,8 +86,8 @@ export function truncar(texto: string, largo = LARGO_DESCRIPCION_TRUNCADA): stri
                     >
                       Eliminar
                     </button>
-                  </td>
-                }
+                  }
+                </td>
               </tr>
             }
           </tbody>

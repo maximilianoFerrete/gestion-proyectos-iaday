@@ -2,8 +2,28 @@
  * Modelos del catálogo de Estados de incidencia según el contrato API de RF-002.
  *
  * Creado: 2026-10-09
- * Modificado: 2026-10-09 - Creación inicial (RF-002)
+ * Modificado: 2026-10-10 - Categoría de seguimiento (RF-005 RN-17)
  */
+
+/** Categoría de seguimiento de un estado (RF-005 DA-01); `null` = sin categoría. */
+export type CategoriaEstadoIncidencia = 'BLOQUEADA' | 'EN_ESPERA';
+
+/** Categorías admitidas por el contrato. */
+export const CATEGORIAS_ESTADO_INCIDENCIA: readonly CategoriaEstadoIncidencia[] = [
+  'BLOQUEADA',
+  'EN_ESPERA',
+];
+
+/** Nombre visible de cada categoría. */
+export const NOMBRES_CATEGORIA_ESTADO: Readonly<Record<CategoriaEstadoIncidencia, string>> = {
+  BLOQUEADA: 'Bloqueada',
+  EN_ESPERA: 'En espera',
+};
+
+/** Nombre visible de la categoría ("—" si no tiene). */
+export function nombreCategoriaEstado(categoria: CategoriaEstadoIncidencia | null): string {
+  return categoria === null ? '—' : NOMBRES_CATEGORIA_ESTADO[categoria];
+}
 
 /** Flujo en el que participa un estado, con sus marcas dentro de ese flujo. */
 export interface EstadoEnFlujoDto {
@@ -22,6 +42,8 @@ export interface EstadoIncidenciaDto {
   readonly activo: boolean;
   readonly cantidadIncidencias: number;
   readonly flujos: readonly EstadoEnFlujoDto[];
+  /** Categoría de seguimiento (RF-005). */
+  readonly categoria: CategoriaEstadoIncidencia | null;
 }
 
 /** Body de `POST` / `PUT` de `/api/estados-incidencia`. */
@@ -29,6 +51,8 @@ export interface EstadoIncidenciaRequest {
   readonly nombre: string;
   readonly descripcion: string | null;
   readonly orden: number;
+  /** Categoría de seguimiento (RF-005); `null` = ninguna. */
+  readonly categoria: CategoriaEstadoIncidencia | null;
 }
 
 /** Filtros de `GET /api/estados-incidencia`. */

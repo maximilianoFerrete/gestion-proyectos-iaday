@@ -11,6 +11,7 @@ namespace GestionProyectos.Application.Incidencias;
 /// <remarks>
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (RF-002)
+/// Modificado: 2026-10-10 - Árbol con ámbito opcional (RF-005, C-RF002-04)
 /// </remarks>
 public interface IIncidenciaConsultaService
 {
@@ -18,8 +19,9 @@ public interface IIncidenciaConsultaService
     Task<Paginado<IncidenciaResumenDto>> ListarAsync(int proyectoId, ListarIncidenciasQuery query,
         CancellationToken ct);
 
-    /// <summary>Devuelve todas las incidencias del proyecto en lista plana por número (DA-11).</summary>
-    Task<IReadOnlyList<NodoArbolIncidenciaDto>> ObtenerArbolAsync(int proyectoId, CancellationToken ct);
+    /// <summary>Incidencias del proyecto (o de su ámbito) en lista plana por número (DA-11).</summary>
+    Task<IReadOnlyList<NodoArbolIncidenciaDto>> ObtenerArbolAsync(int proyectoId, ArbolIncidenciasQuery query,
+        CancellationToken ct);
 
     /// <summary>Obtiene el detalle; 404 si no existe o es de otro proyecto (RN-37).</summary>
     Task<IncidenciaDto> ObtenerAsync(int proyectoId, int id, CancellationToken ct);
@@ -31,11 +33,14 @@ public interface IIncidenciaConsultaService
 /// <remarks>
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (RF-002)
+/// Modificado: 2026-10-10 - Vencida con la fecha de referencia y árbol por ámbito (RF-005, RN-36)
 /// </remarks>
 public class IncidenciaConsultaService(
     IIncidenciaRepository incidencias,
     IProyectoRepository proyectos,
-    IValidator<ListarIncidenciasQuery> validadorListado) : IIncidenciaConsultaService
+    IValidator<ListarIncidenciasQuery> validadorListado,
+    IValidator<ArbolIncidenciasQuery> validadorArbol,
+    IFechaReferencia fechaReferencia) : IIncidenciaConsultaService
 {
     /// <inheritdoc />
     public async Task<Paginado<IncidenciaResumenDto>> ListarAsync(int proyectoId, ListarIncidenciasQuery query,
@@ -45,15 +50,23 @@ public class IncidenciaConsultaService(
         var normalizada = query.Normalizar();
         await validadorListado.ValidateAndThrowAsync(normalizada, ct);
         await AsegurarProyectoAsync(proyectoId, ct);
-        return await incidencias.ListarAsync(OpcionesListadoIncidencias.CrearFiltro(proyectoId, normalizada), ct);
+        var pagina = await incidencias.ListarAsync(OpcionesListadoIncidencias.CrearFiltro(proyectoId, normalizada), ct);
+        var hoy = fechaReferencia.Hoy();
+        return pagina with { Items = pagina.Items.Select(i => i.ConVencida(hoy)).ToList() };
     }
 
     /// <inheritdoc />
     public async Task<IReadOnlyList<NodoArbolIncidenciaDto>> ObtenerArbolAsync(int proyectoId,
-        CancellationToken ct)
+        ArbolIncidenciasQuery query, CancellationToken ct)
     {
+        ArgumentNullException.ThrowIfNull(query);
+        await validadorArbol.ValidateAndThrowAsync(query, ct);
         await AsegurarProyectoAsync(proyectoId, ct);
-        return await incidencias.ListarArbolAsync(proyectoId, ct);
+        var nodos = query.TieneFiltros
+            ? await incidencias.ListarArbolAsync(proyectoId, query.AgrupacionId, query.SinAgrupacion == true, ct)
+            : await incidencias.ListarArbolAsync(proyectoId, ct);
+        var hoy = fechaReferencia.Hoy();
+        return nodos.Select(n => n.ConVencida(hoy)).ToList();
     }
 
     /// <inheritdoc />
@@ -66,7 +79,7 @@ public class IncidenciaConsultaService(
             throw IncidenciaNoEncontrada(proyectoId, id);
         }
 
-        return detalle;
+        return detalle.ConVencida(fechaReferencia.Hoy());
     }
 
     /// <summary>Error 404 de incidencia inexistente o de otro proyecto (RN-37).</summary>

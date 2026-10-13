@@ -1,14 +1,14 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { EstadoIncidenciaDto } from '../../models/estado-incidencia.model';
+import { EstadoIncidenciaDto, nombreCategoriaEstado } from '../../models/estado-incidencia.model';
 import { puedeActivarEstado, puedeDesactivarEstado } from '../../utils/reglas-configuracion';
 
 /**
  * Tabla del catálogo de estados de incidencia (C3). Acciones solo con permiso; Desactivar oculto
- * en estados iniciales de algún flujo (RN-11).
+ * en estados iniciales de algún flujo (RN-11). Columna "Categoría de seguimiento" (RF-005).
  *
  * Creado: 2026-10-09
- * Modificado: 2026-10-09 - Creación inicial (RF-002)
+ * Modificado: 2026-10-10 - Columna Categoría de seguimiento (RF-005)
  */
 @Component({
   selector: 'app-estados-incidencia-tabla',
@@ -27,6 +27,7 @@ import { puedeActivarEstado, puedeDesactivarEstado } from '../../utils/reglas-co
             <th scope="col">Orden</th>
             <th scope="col">Nombre</th>
             <th scope="col">Descripción</th>
+            <th scope="col">Categoría de seguimiento</th>
             <th scope="col">Activo</th>
             <th scope="col">Flujos</th>
             <th scope="col">Incidencias</th>
@@ -41,6 +42,7 @@ import { puedeActivarEstado, puedeDesactivarEstado } from '../../utils/reglas-co
               <td>{{ estado.orden }}</td>
               <td>{{ estado.nombre }}</td>
               <td>{{ estado.descripcion ?? '' }}</td>
+              <td>{{ nombreCategoria(estado.categoria ?? null) }}</td>
               <td>{{ estado.activo ? 'Sí' : 'No' }}</td>
               <td>
                 @for (flujo of estado.flujos; track flujo.id; let ultimo = $last) {
@@ -100,6 +102,7 @@ export class EstadosIncidenciaTablaComponent {
 
   protected readonly puedeDesactivar = puedeDesactivarEstado;
   protected readonly puedeActivar = puedeActivarEstado;
+  protected readonly nombreCategoria = nombreCategoriaEstado;
 
   /** Marcas "(inicial)" / "(final)" del estado dentro de un flujo. */
   marcas(esInicial: boolean, esFinal: boolean): string {

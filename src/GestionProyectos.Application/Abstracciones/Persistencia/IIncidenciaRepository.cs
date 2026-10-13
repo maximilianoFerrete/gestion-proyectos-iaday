@@ -11,6 +11,7 @@ namespace GestionProyectos.Application.Abstracciones.Persistencia;
 /// <remarks>
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (RF-002)
+/// Modificado: 2026-10-10 - Árbol filtrado por ámbito (RF-005, C-RF002-04)
 /// </remarks>
 public interface IIncidenciaRepository
 {
@@ -31,6 +32,10 @@ public interface IIncidenciaRepository
 
     /// <summary>Lista plana de todas las incidencias del proyecto ordenadas por número.</summary>
     Task<IReadOnlyList<NodoArbolIncidenciaDto>> ListarArbolAsync(int proyectoId, CancellationToken ct);
+
+    /// <summary>Lista plana del ámbito (agrupación o sin agrupación) ordenada por número.</summary>
+    Task<IReadOnlyList<NodoArbolIncidenciaDto>> ListarArbolAsync(int proyectoId, int? agrupacionId,
+        bool sinAgrupacion, CancellationToken ct);
 
     /// <summary>Ids de los ancestros de la incidencia (padre, abuelo, ...), sin incluirla.</summary>
     Task<IReadOnlyList<int>> ObtenerIdsAncestrosAsync(int id, CancellationToken ct);

@@ -23,6 +23,7 @@ describe('IncidenciasService', () => {
     fechaVencimiento: '2026-11-20',
     agrupacionId: null,
     padreId: 15,
+    estimacion: null,
   };
 
   const edicion: EditarIncidenciaRequest = {
@@ -34,6 +35,7 @@ describe('IncidenciasService', () => {
     fechaVencimiento: '2026-11-25',
     agrupacionId: null,
     padreId: 3,
+    estimacion: null,
   };
 
   beforeEach(() => {
@@ -152,5 +154,51 @@ describe('IncidenciasService', () => {
   // RN-34, CA-22: no hay método para eliminar incidencias
   it('no expone un método eliminar', () => {
     expect((servicio as unknown as Record<string, unknown>)['eliminar']).toBeUndefined();
+  });
+
+  // RF-005 CA-44: orden por estimación, sin otros parámetros nuevos respecto de RF-002
+  it('listar con ordenarPor=estimacion envía solo ese orden', () => {
+    servicio.listar(1, { tipoIds: [], sinResponsable: false, sinAgrupacion: false, ordenarPor: 'estimacion' }).subscribe();
+
+    const req = http.expectOne((r) => r.url === '/api/proyectos/1/incidencias');
+    expect(req.request.params.keys()).toEqual(['ordenarPor']);
+    expect(req.request.params.get('ordenarPor')).toBe('estimacion');
+    req.flush({ items: [], pagina: 1, tamanioPagina: 20, total: 0 });
+  });
+
+  // RF-005 RN-22, CA-28: árbol con ámbito agrupación
+  it('arbol(1, {agrupacionId:8}) envía agrupacionId', () => {
+    servicio.arbol(1, { agrupacionId: 8 }).subscribe();
+
+    const req = http.expectOne((r) => r.urlWithParams === '/api/proyectos/1/incidencias/arbol?agrupacionId=8');
+    expect(req.request.method).toBe('GET');
+    req.flush([]);
+  });
+
+  // RF-005 RN-01: árbol con ámbito "sin agrupación" (gana sobre agrupacionId)
+  it('arbol(1, {agrupacionId:8, sinAgrupacion:true}) envía solo sinAgrupacion', () => {
+    servicio.arbol(1, { agrupacionId: 8, sinAgrupacion: true }).subscribe();
+
+    const req = http.expectOne((r) => r.url === '/api/proyectos/1/incidencias/arbol');
+    expect(req.request.params.keys()).toEqual(['sinAgrupacion']);
+    req.flush([]);
+  });
+
+  // RF-005 RN-34, CA-41: el alta envía la estimación numérica
+  it('crear con estimación 2.5 la envía en el body', () => {
+    servicio.crear(1, { ...alta, estimacion: 2.5 }).subscribe();
+
+    const req = http.expectOne('/api/proyectos/1/incidencias');
+    expect(req.request.body.estimacion).toBe(2.5);
+    req.flush({});
+  });
+
+  // RF-005 RN-34, CA-43: la edición envía siempre estimacion (null deja sin estimar)
+  it('editar con estimación null la envía explícitamente como null', () => {
+    servicio.editar(1, 15, { ...edicion, estimacion: null }).subscribe();
+
+    const req = http.expectOne('/api/proyectos/1/incidencias/15');
+    expect(req.request.body).toHaveProperty('estimacion', null);
+    req.flush({});
   });
 });

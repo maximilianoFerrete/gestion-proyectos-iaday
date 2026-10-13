@@ -21,14 +21,8 @@ import {
   mensajeErrorAccion,
 } from '../../../../shared/forms/errores-servidor';
 import { parsearId } from '../../../../shared/utils/ids';
-import {
-  NombreOrdenFormComponent,
-  ValoresNombreOrden,
-} from '../../components/nombre-orden-form/nombre-orden-form.component';
-import {
-  EstadoIncidenciaDto,
-  LIMITES_ESTADO_INCIDENCIA,
-} from '../../models/estado-incidencia.model';
+import { EstadoIncidenciaFormComponent } from '../../components/estado-incidencia-form/estado-incidencia-form.component';
+import { EstadoIncidenciaDto, EstadoIncidenciaRequest } from '../../models/estado-incidencia.model';
 import { EstadosIncidenciaService } from '../../services/estados-incidencia.service';
 import { ordenSugeridoEstado } from '../../utils/reglas-configuracion';
 
@@ -37,15 +31,16 @@ const RUTA_ESTADOS = '/configuracion/incidencias/estados';
 
 /**
  * C3 – Alta (`/configuracion/incidencias/estados/nuevo`, orden sugerido = mayor + 10) y edición
- * (`/configuracion/incidencias/estados/:id/editar`) de estado de incidencia.
+ * (`/configuracion/incidencias/estados/:id/editar`) de estado de incidencia, con categoría de
+ * seguimiento (RF-005). 409 `ESTADO_CATEGORIA_INCOMPATIBLE` arriba del formulario.
  *
  * Creado: 2026-10-09
- * Modificado: 2026-10-09 - Creación inicial (RF-002)
+ * Modificado: 2026-10-10 - Formulario con categoría de seguimiento (RF-005)
  */
 @Component({
   selector: 'app-estado-incidencia-form-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NombreOrdenFormComponent, NoEncontradoComponent],
+  imports: [EstadoIncidenciaFormComponent, NoEncontradoComponent],
   template: `
     <header class="encabezado-pagina">
       <h1>{{ esEdicion() ? 'Editar estado de incidencia' : 'Nuevo estado de incidencia' }}</h1>
@@ -56,10 +51,8 @@ const RUTA_ESTADOS = '/configuracion/incidencias/estados';
       <p class="alerta alerta-error" role="alert">{{ mensaje }}</p>
     } @else if (listo()) {
       <section class="panel">
-        <app-nombre-orden-form
-          prefijo="estado-incidencia"
-          [limites]="limites"
-          [valores]="estado()"
+        <app-estado-incidencia-form
+          [estado]="estado()"
           [ordenSugerido]="orden()"
           [enviando]="enviando()"
           [errorServidor]="errorServidor()"
@@ -81,7 +74,6 @@ export class EstadoIncidenciaFormPage implements OnInit {
   /** Parámetro de ruta `:id` (ausente en alta). */
   readonly id = input<string>();
 
-  readonly limites = LIMITES_ESTADO_INCIDENCIA;
   readonly estadoId = computed(() => parsearId(this.id()));
   readonly esEdicion = computed(() => this.id() !== undefined);
   readonly estado = signal<EstadoIncidenciaDto | null>(null);
@@ -106,7 +98,7 @@ export class EstadoIncidenciaFormPage implements OnInit {
   }
 
   /** POST o PUT; éxito → toast y vuelta al listado. */
-  guardar(request: ValoresNombreOrden): void {
+  guardar(request: EstadoIncidenciaRequest): void {
     const id = this.estadoId();
     this.enviando.set(true);
     this.errorServidor.set(SIN_ERRORES);

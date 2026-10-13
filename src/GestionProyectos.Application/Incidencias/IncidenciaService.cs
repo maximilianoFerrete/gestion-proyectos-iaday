@@ -34,6 +34,7 @@ public interface IIncidenciaService
 /// <remarks>
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (RF-002)
+/// Modificado: 2026-10-10 - Persiste la estimación en alta y edición (RF-005, RN-34)
 /// </remarks>
 public class IncidenciaService(
     IIncidenciaRepository incidencias,
@@ -68,7 +69,7 @@ public class IncidenciaService(
             var nueva = new Incidencia(proyectoId, asignado.Numero,
                 FormateadorCodigoIncidencia.Formatear(asignado.Proyecto.Codigo, asignado.Numero),
                 tipo.Id, flujo.EstadoInicialId, ADatos(datos.Titulo, datos.Descripcion, prioridadId,
-                    datos.ResponsableId, datos.FechaVencimiento), ubicacion, reloj.AhoraUtc());
+                    datos.ResponsableId, datos.FechaVencimiento, datos.Estimacion), ubicacion, reloj.AhoraUtc());
             await incidencias.AgregarAsync(nueva, ct);
             return nueva;
         }, ct);
@@ -102,7 +103,7 @@ public class IncidenciaService(
             }
 
             await GuardarEdicionAsync(incidencia, ADatos(datos.Titulo, datos.Descripcion, prioridadId,
-                datos.ResponsableId, datos.FechaVencimiento), datos.EstadoId.Value, ubicacion, ct);
+                datos.ResponsableId, datos.FechaVencimiento, datos.Estimacion), datos.EstadoId.Value, ubicacion, ct);
         }, ct);
 
         logger.LogInformation("Incidencia {IncidenciaId} actualizada", id);
@@ -143,8 +144,8 @@ public class IncidenciaService(
     }
 
     private static DatosIncidencia ADatos(string? titulo, string? descripcion, int prioridadId,
-        int? responsableId, DateOnly? fechaVencimiento) =>
-        new(titulo!, descripcion!, prioridadId, responsableId, fechaVencimiento);
+        int? responsableId, DateOnly? fechaVencimiento, decimal? estimacion) =>
+        new(titulo!, descripcion!, prioridadId, responsableId, fechaVencimiento, estimacion);
 
     private async Task<Incidencia> BloquearYObtenerEditableAsync(int proyectoId, int id, CancellationToken ct)
     {

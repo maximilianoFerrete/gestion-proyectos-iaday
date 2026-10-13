@@ -13,12 +13,13 @@ namespace GestionProyectos.Infrastructure.SqlServer.Repositorios;
 /// <remarks>
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (RF-002)
+/// Modificado: 2026-10-10 - Persiste Estimacion y árbol por ámbito (RF-005)
 /// </remarks>
 internal sealed class IncidenciaRepository(EjecutorSql sql) : IIncidenciaRepository
 {
     private const string Columnas = """
         Id, ProyectoId, Numero, Codigo, Titulo, Descripcion, TipoId, EstadoId, PrioridadId, ResponsableId,
-        FechaVencimiento, AgrupacionId, PadreId, FechaCreacion, FechaModificacion
+        FechaVencimiento, Estimacion, AgrupacionId, PadreId, FechaCreacion, FechaModificacion
         """;
 
     /// <inheritdoc />
@@ -101,6 +102,15 @@ internal sealed class IncidenciaRepository(EjecutorSql sql) : IIncidenciaReposit
     }
 
     /// <inheritdoc />
+    public async Task<IReadOnlyList<NodoArbolIncidenciaDto>> ListarArbolAsync(int proyectoId, int? agrupacionId,
+        bool sinAgrupacion, CancellationToken ct)
+    {
+        var filas = await sql.ConsultarAsync<FilaIncidencia>(ConsultasIncidencia.ArbolPorAmbito,
+            new { ProyectoId = proyectoId, AgrupacionId = agrupacionId, SinAgrupacion = sinAgrupacion }, ct);
+        return filas.Select(f => f.ANodo()).ToList();
+    }
+
+    /// <inheritdoc />
     public Task<IReadOnlyList<int>> ObtenerIdsAncestrosAsync(int id, CancellationToken ct) =>
         sql.ConsultarAsync<int>(ConsultasIncidencia.Ancestros, new { Id = id }, ct);
 
@@ -121,10 +131,11 @@ internal sealed class IncidenciaRepository(EjecutorSql sql) : IIncidenciaReposit
         const string comando = """
             INSERT INTO dbo.Incidencias
                 (ProyectoId, Numero, Codigo, Titulo, Descripcion, TipoId, EstadoId, PrioridadId, ResponsableId,
-                 FechaVencimiento, AgrupacionId, PadreId, FechaCreacion, FechaModificacion)
+                 FechaVencimiento, Estimacion, AgrupacionId, PadreId, FechaCreacion, FechaModificacion)
             OUTPUT INSERTED.Id
             VALUES (@ProyectoId, @Numero, @Codigo, @Titulo, @Descripcion, @TipoId, @EstadoId, @PrioridadId,
-                    @ResponsableId, @FechaVencimiento, @AgrupacionId, @PadreId, @FechaCreacion, @FechaModificacion);
+                    @ResponsableId, @FechaVencimiento, @Estimacion, @AgrupacionId, @PadreId, @FechaCreacion,
+                    @FechaModificacion);
             """;
         var id = await sql.EscalarAsync<int>(comando, Parametros(incidencia), ct);
         incidencia.AsignarId(id);
@@ -138,7 +149,7 @@ internal sealed class IncidenciaRepository(EjecutorSql sql) : IIncidenciaReposit
             UPDATE dbo.Incidencias
             SET Titulo = @Titulo, Descripcion = @Descripcion, TipoId = @TipoId, EstadoId = @EstadoId,
                 PrioridadId = @PrioridadId, ResponsableId = @ResponsableId, FechaVencimiento = @FechaVencimiento,
-                AgrupacionId = @AgrupacionId, PadreId = @PadreId, FechaModificacion = @FechaModificacion
+                Estimacion = @Estimacion, AgrupacionId = @AgrupacionId, PadreId = @PadreId, FechaModificacion = @FechaModificacion
             WHERE Id = @Id;
             """;
         await sql.EjecutarAsync(comando, Parametros(incidencia), ct);
@@ -176,6 +187,7 @@ internal sealed class IncidenciaRepository(EjecutorSql sql) : IIncidenciaReposit
         i.PrioridadId,
         i.ResponsableId,
         FechaVencimiento = SqlUtil.Parametro(i.FechaVencimiento),
+        i.Estimacion,
         i.AgrupacionId,
         i.PadreId,
         i.FechaCreacion,
@@ -188,14 +200,16 @@ internal sealed class IncidenciaRepository(EjecutorSql sql) : IIncidenciaReposit
     /// <remarks>
     /// Creado: 2026-10-09
     /// Modificado: 2026-10-09 - Versión inicial (RF-002)
+    /// Modificado: 2026-10-10 - Agrega Estimacion (RF-005)
     /// </remarks>
     private sealed record FilaEntidad(int Id, int ProyectoId, int Numero, string Codigo, string Titulo,
         string Descripcion, int TipoId, int EstadoId, int PrioridadId, int? ResponsableId,
-        DateTime? FechaVencimiento, int? AgrupacionId, int? PadreId, DateTime FechaCreacion,
+        DateTime? FechaVencimiento, decimal? Estimacion, int? AgrupacionId, int? PadreId, DateTime FechaCreacion,
         DateTime? FechaModificacion)
     {
         public Incidencia AEntidad() => Incidencia.Reconstituir(Id, ProyectoId, Numero, Codigo, TipoId, EstadoId,
-            new DatosIncidencia(Titulo, Descripcion, PrioridadId, ResponsableId, SqlUtil.Fecha(FechaVencimiento)),
+            new DatosIncidencia(Titulo, Descripcion, PrioridadId, ResponsableId, SqlUtil.Fecha(FechaVencimiento),
+                SqlUtil.SinCerosFinales(Estimacion)),
             new UbicacionIncidencia(PadreId, AgrupacionId),
             SqlUtil.Utc(FechaCreacion), SqlUtil.Utc(FechaModificacion));
     }

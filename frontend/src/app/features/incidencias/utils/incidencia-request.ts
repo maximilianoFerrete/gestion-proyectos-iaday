@@ -4,7 +4,7 @@ import { CrearIncidenciaRequest, EditarIncidenciaRequest } from '../models/incid
  * Armado de los bodies de alta y edición de incidencia a partir de los valores del formulario.
  *
  * Creado: 2026-10-09
- * Modificado: 2026-10-09 - Creación inicial (RF-002)
+ * Modificado: 2026-10-10 - Estimación (RF-005)
  */
 
 /** Valores emitidos por `IncidenciaFormComponent` (textos ya recortados). */
@@ -21,6 +21,8 @@ export interface ValoresIncidenciaForm {
   /** null si hay padre (se hereda, RN-28). */
   readonly agrupacionId: number | null;
   readonly padreId: number | null;
+  /** Estimación en horas; vacío = null (RF-005 RN-34). */
+  readonly estimacion: number | null;
 }
 
 /** Body de `POST .../incidencias`; null si falta el tipo. */
@@ -39,6 +41,7 @@ export function aCrearIncidenciaRequest(
     fechaVencimiento: valores.fechaVencimiento,
     agrupacionId: valores.padreId === null ? valores.agrupacionId : null,
     padreId: valores.padreId,
+    estimacion: valores.estimacion,
   };
 }
 
@@ -58,5 +61,6 @@ export function aEditarIncidenciaRequest(
     fechaVencimiento: valores.fechaVencimiento,
     agrupacionId: valores.padreId === null ? valores.agrupacionId : null,
     padreId: valores.padreId,
+    estimacion: valores.estimacion,
   };
 }

@@ -5,6 +5,7 @@ import { API_URL } from '../../../core/config/api-url.token';
 import { Paginado } from '../../../core/models/paginado.model';
 import { crearParams } from '../../../core/services/http-params.util';
 import {
+  AmbitoArbolIncidencias,
   CambiarTipoIncidenciaRequest,
   CrearIncidenciaRequest,
   EditarIncidenciaRequest,
@@ -18,7 +19,7 @@ import {
  * Cliente HTTP de `/api/proyectos/{proyectoId}/incidencias`. No hay eliminación (RN-34).
  *
  * Creado: 2026-10-09
- * Modificado: 2026-10-09 - Creación inicial (RF-002)
+ * Modificado: 2026-10-10 - Árbol con ámbito `agrupacionId` / `sinAgrupacion` (RF-005)
  */
 @Injectable({ providedIn: 'root' })
 export class IncidenciasService {
@@ -47,9 +48,18 @@ export class IncidenciasService {
     return this.http.get<Paginado<IncidenciaResumenDto>>(this.urlBase(proyectoId), { params });
   }
 
-  /** Lista plana de todas las incidencias del proyecto para armar el árbol. */
-  arbol(proyectoId: number): Observable<NodoArbolIncidenciaDto[]> {
-    return this.http.get<NodoArbolIncidenciaDto[]>(`${this.urlBase(proyectoId)}/arbol`);
+  /** Lista plana del árbol; sin ámbito, todas las del proyecto (URL de RF-002). */
+  arbol(
+    proyectoId: number,
+    ambito: AmbitoArbolIncidencias = {},
+  ): Observable<NodoArbolIncidenciaDto[]> {
+    const params = crearParams({
+      agrupacionId: ambito.sinAgrupacion ? undefined : ambito.agrupacionId,
+      sinAgrupacion: ambito.sinAgrupacion ? true : undefined,
+    });
+    return this.http.get<NodoArbolIncidenciaDto[]>(`${this.urlBase(proyectoId)}/arbol`, {
+      params,
+    });
   }
 
   /** Detalle de una incidencia del proyecto (con padre, hijas y tipos de hija permitidos). */

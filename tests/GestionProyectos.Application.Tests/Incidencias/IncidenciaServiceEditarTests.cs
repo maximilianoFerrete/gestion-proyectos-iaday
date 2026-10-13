@@ -15,6 +15,7 @@ namespace GestionProyectos.Application.Tests.Incidencias;
 /// <remarks>
 /// Creado: 2026-10-10
 /// Modificado: 2026-10-10 - Versión inicial (tests RF-002)
+/// Modificado: 2026-10-11 - Estimación en la edición (tests RF-005, RN-34, RN-35, CA-43)
 /// </remarks>
 public class IncidenciaServiceEditarTests : ContextoIncidenciaService
 {
@@ -424,5 +425,61 @@ public class IncidenciaServiceEditarTests : ContextoIncidenciaService
             Incidencias.ActualizarAsync(_hu, Arg.Any<CancellationToken>());
             Uow.ConfirmarAsync(Arg.Any<CancellationToken>());
         });
+    }
+
+    // RF-005 RN-34, CA-43: editar con estimación null teniendo 8 deja la incidencia sin estimar
+    [Fact]
+    public async Task EditarAsync_EstimacionNullTeniendo8_PersisteNull()
+    {
+        // Arrange
+        var hu = Existe(Incidencia(HuId, tipoId: Hu, estadoId: EnProgreso, prioridadId: Alta,
+            responsableId: PersonaActiva, vencimiento: Nov30, agrupacionId: AgrupacionPagos, padreId: EpicaPagos,
+            estimacion: 8m));
+
+        // Act
+        await EditarHu(SinCambios with { Estimacion = null });
+
+        // Assert
+        Assert.Null(hu.Estimacion);
+        await Incidencias.Received(1).ActualizarAsync(hu, Arg.Any<CancellationToken>());
+    }
+
+    // RF-005 RN-34: editar con estimación 12.5 la persiste
+    [Fact]
+    public async Task EditarAsync_ConEstimacion_PersisteLaEstimacion()
+    {
+        // Act
+        await EditarHu(SinCambios with { Estimacion = 12.5m });
+
+        // Assert
+        Assert.Equal(12.5m, _hu.Estimacion);
+    }
+
+    // RF-005 RN-35: la estimación del padre no se valida contra la de sus hijas
+    [Fact]
+    public async Task EditarAsync_PadreConEstimacionMenorQueLaDeSusHijas_Actualiza()
+    {
+        // Arrange
+        Existe(Incidencia(SubtareaId, tipoId: Subtarea, agrupacionId: AgrupacionPagos, padreId: HuId,
+            estimacion: 40m));
+
+        // Act
+        await EditarHu(SinCambios with { Estimacion = 1m });
+
+        // Assert
+        Assert.Equal(1m, _hu.Estimacion);
+        await Incidencias.Received(1).ActualizarAsync(_hu, Arg.Any<CancellationToken>());
+    }
+
+    // RF-005 RN-34, CA-42: estimación con 3 decimales → ValidationException sin actualizar
+    [Fact]
+    public async Task EditarAsync_EstimacionConTresDecimales_LanzaValidationExceptionSinActualizar()
+    {
+        // Act
+        var accion = () => EditarHu(SinCambios with { Estimacion = 1.234m });
+
+        // Assert
+        await Assert.ThrowsAsync<FluentValidation.ValidationException>(accion);
+        await Incidencias.DidNotReceive().ActualizarAsync(Arg.Any<Incidencia>(), Arg.Any<CancellationToken>());
     }
 }

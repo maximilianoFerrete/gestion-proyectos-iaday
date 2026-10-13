@@ -34,10 +34,11 @@ function nodo(id: number, padreId: number | null): NodoArbolIncidenciaDto {
     titulo: `Incidencia ${id}`,
     padreId,
     tipo: { id: 1, nombre: 'Épica', activo: true, nivelNumero: 1 },
-    estado: { id: 1, nombre: 'Por hacer', activo: true, esFinal: false },
+    estado: { id: 1, nombre: 'Por hacer', activo: true, esFinal: false, categoria: null },
     prioridad: { id: 2, nombre: 'Media', orden: 20, activo: true },
     responsable: null,
     fechaVencimiento: null,
+    vencida: false,
     agrupacion: null,
   };
 }

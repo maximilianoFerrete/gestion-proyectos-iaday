@@ -3,7 +3,7 @@
  * `ErrorApi`, que es lo que reciben los llamadores tras pasar por `errorInterceptor` (spec 0.3).
  *
  * Creado: 2026-10-09
- * Modificado: 2026-10-09 - Códigos de RF-002 y extensión `incidencias` (RF-002 0.2)
+ * Modificado: 2026-10-10 - Código `ESTADO_CATEGORIA_INCOMPATIBLE` (RF-005)
  */
 
 /** Códigos de error del catálogo de la spec (RF-001 0.3 y RF-002 "Nuevos códigos de error"). */
@@ -59,7 +59,9 @@ export type CodigoError =
   | 'PRIORIDAD_NO_ELEGIBLE_PREDETERMINADA'
   | 'RELACION_CIRCULAR'
   | 'TIPO_INCOMPATIBLE_CON_HIJAS'
-  | 'VENCIMIENTO_ANTERIOR_A_HIJAS';
+  | 'VENCIMIENTO_ANTERIOR_A_HIJAS'
+  // RF-005
+  | 'ESTADO_CATEGORIA_INCOMPATIBLE';
 
 /** Cuerpo ProblemDetails tal como lo envía la API. */
 export interface ProblemDetails {

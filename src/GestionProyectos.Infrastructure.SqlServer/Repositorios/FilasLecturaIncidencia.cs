@@ -10,6 +10,7 @@ namespace GestionProyectos.Infrastructure.SqlServer.Repositorios;
 /// <remarks>
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (RF-002)
+/// Modificado: 2026-10-10 - Estimación y categoría del estado (RF-005)
 /// </remarks>
 internal sealed class FilaIncidencia
 {
@@ -22,6 +23,7 @@ internal sealed class FilaIncidencia
     public int? PadreId { get; init; }
     public string? PadreCodigo { get; init; }
     public DateTime? FechaVencimiento { get; init; }
+    public decimal? Estimacion { get; init; }
     public DateTime FechaCreacion { get; init; }
     public DateTime? FechaModificacion { get; init; }
     public int TipoId { get; init; }
@@ -32,6 +34,7 @@ internal sealed class FilaIncidencia
     public string EstadoNombre { get; init; } = string.Empty;
     public bool EstadoActivo { get; init; }
     public bool EstadoEsFinal { get; init; }
+    public string? EstadoCategoria { get; init; }
     public int PrioridadId { get; init; }
     public string PrioridadNombre { get; init; } = string.Empty;
     public int PrioridadOrden { get; init; }
@@ -50,7 +53,7 @@ internal sealed class FilaIncidencia
     public IncidenciaResumenDto AResumen() => new(Id, Codigo, Numero, Titulo, Tipo(), Estado(), Prioridad(),
         Responsable(), SqlUtil.Fecha(FechaVencimiento), Agrupacion(),
         PadreId is { } padreId ? new PadreResumenDto(padreId, PadreCodigo ?? string.Empty) : null,
-        CantidadHijas, SqlUtil.Utc(FechaCreacion));
+        CantidadHijas, SqlUtil.Utc(FechaCreacion), SqlUtil.SinCerosFinales(Estimacion));
 
     /// <summary>Convierte la fila en un nodo del árbol.</summary>
     public NodoArbolIncidenciaDto ANodo() => new(Id, Codigo, Titulo, PadreId, Tipo(), Estado(), Prioridad(),
@@ -67,11 +70,12 @@ internal sealed class FilaIncidencia
         new ProyectoReferenciaIncidenciaDto(ProyectoId, ProyectoCodigo, ProyectoNombre, ProyectoFechaArchivado is not null),
         Titulo, Descripcion, Tipo(), Estado(), Prioridad(), Responsable(), SqlUtil.Fecha(FechaVencimiento),
         Agrupacion(), PadreId is not null, padre, hijas, tiposHijaPermitidos,
-        SqlUtil.Utc(FechaCreacion), SqlUtil.Utc(FechaModificacion));
+        SqlUtil.Utc(FechaCreacion), SqlUtil.Utc(FechaModificacion), SqlUtil.SinCerosFinales(Estimacion));
 
     private TipoReferenciaDto Tipo() => new(TipoId, TipoNombre, TipoActivo, TipoNivelNumero);
 
-    private EstadoIncidenciaReferenciaDto Estado() => new(EstadoId, EstadoNombre, EstadoActivo, EstadoEsFinal);
+    private EstadoIncidenciaReferenciaDto Estado() =>
+        new(EstadoId, EstadoNombre, EstadoActivo, EstadoEsFinal, EstadoCategoria);
 
     private PrioridadReferenciaDto Prioridad() => new(PrioridadId, PrioridadNombre, PrioridadOrden, PrioridadActivo);
 

@@ -23,10 +23,10 @@ public interface IEstadoIncidenciaService
     /// <summary>Obtiene un estado por id (404 si no existe).</summary>
     Task<EstadoIncidenciaDto> ObtenerAsync(int id, CancellationToken ct);
 
-    /// <summary>Crea un estado activo (RN-01, RN-10).</summary>
+    /// <summary>Crea un estado activo con categoría opcional (RN-01, RN-10, RF-005 RN-17).</summary>
     Task<EstadoIncidenciaDto> CrearAsync(EstadoIncidenciaRequest request, CancellationToken ct);
 
-    /// <summary>Edita nombre, descripción y orden (RN-01, RN-10).</summary>
+    /// <summary>Edita nombre, descripción, orden y categoría (RN-01, RN-10, RF-005 RN-18).</summary>
     Task<EstadoIncidenciaDto> EditarAsync(int id, EstadoIncidenciaRequest request, CancellationToken ct);
 
     /// <summary>Desactiva si no es inicial de ningún flujo; idempotente (RN-11).</summary>
@@ -42,6 +42,7 @@ public interface IEstadoIncidenciaService
 /// <remarks>
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (RF-002)
+/// Modificado: 2026-10-10 - Categoría de seguimiento y regla RN-18 (RF-005)
 /// </remarks>
 public class EstadoIncidenciaService(
     IEstadoIncidenciaRepository repositorio,
@@ -63,7 +64,8 @@ public class EstadoIncidenciaService(
     {
         var datos = await PrepararAsync(request, ct);
         await AsegurarNombreDisponibleAsync(datos.Nombre!, null, ct);
-        var estado = new EstadoIncidencia(datos.Nombre!, datos.Descripcion, datos.Orden!.Value, reloj.AhoraUtc());
+        var estado = new EstadoIncidencia(datos.Nombre!, datos.Descripcion, datos.Orden!.Value, reloj.AhoraUtc(),
+            datos.Categoria);
         await repositorio.AgregarAsync(estado, ct);
         logger.LogInformation("Estado de incidencia {EstadoId} creado", estado.Id);
         return await ObtenerAsync(estado.Id, ct);
@@ -76,7 +78,12 @@ public class EstadoIncidenciaService(
         var datos = await PrepararAsync(request, ct);
         var estado = await repositorio.ObtenerPorIdAsync(id, ct) ?? throw NoEncontrado(id);
         await AsegurarNombreDisponibleAsync(datos.Nombre!, id, ct);
-        estado.Actualizar(datos.Nombre!, datos.Descripcion, datos.Orden!.Value, reloj.AhoraUtc());
+        var ahora = reloj.AhoraUtc();
+        IReadOnlyList<string> flujosInicialOFinal = datos.Categoria is null
+            ? []
+            : await repositorio.ListarFlujosDondeEsInicialOFinalAsync(id, ct);
+        estado.CambiarCategoria(datos.Categoria, flujosInicialOFinal, ahora);
+        estado.Actualizar(datos.Nombre!, datos.Descripcion, datos.Orden!.Value, ahora);
         await repositorio.ActualizarAsync(estado, ct);
         logger.LogInformation("Estado de incidencia {EstadoId} actualizado", estado.Id);
         return await ObtenerAsync(estado.Id, ct);

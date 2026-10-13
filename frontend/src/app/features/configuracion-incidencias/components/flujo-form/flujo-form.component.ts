@@ -31,7 +31,11 @@ import {
   recortarOpcional,
   textoRequerido,
 } from '../../../../shared/validators/texto.validators';
-import { EstadoIncidenciaDto } from '../../models/estado-incidencia.model';
+import {
+  CategoriaEstadoIncidencia,
+  EstadoIncidenciaDto,
+  NOMBRES_CATEGORIA_ESTADO,
+} from '../../models/estado-incidencia.model';
 import {
   EstadoFlujoRequest,
   FlujoIncidenciaDto,
@@ -50,19 +54,26 @@ type EstadoFlujoForm = FormGroup<{
   esFinal: FormControl<boolean>;
 }>;
 
-/** Datos visibles de un estado (nombre y si está activo). */
+/** Datos visibles de un estado (nombre, si está activo y su categoría de seguimiento). */
 interface InfoEstado {
   readonly nombre: string;
   readonly activo: boolean;
+  readonly categoria: CategoriaEstadoIncidencia | null;
+}
+
+/** Ayuda de los estados con categoría (RF-005 "Cambios en C4", RN-18). */
+export function ayudaEstadoConCategoria(categoria: CategoriaEstadoIncidencia): string {
+  return `Estado de categoría ${NOMBRES_CATEGORIA_ESTADO[categoria]}: no puede ser inicial ni final`;
 }
 
 /**
  * Formulario de flujo de trabajo (C4, RN-13/RN-14): Nombre, Descripción y lista ordenable de
  * estados (agregar activos no incluidos, quitar, subir/bajar), radio "Inicial" (uno; no en
- * inactivos) y check "Final" (deshabilitado en el inicial).
+ * inactivos) y check "Final" (deshabilitado en el inicial). Los estados con categoría de
+ * seguimiento no pueden ser iniciales ni finales (RF-005 RN-18).
  *
  * Creado: 2026-10-09
- * Modificado: 2026-10-09 - Creación inicial (RF-002)
+ * Modificado: 2026-10-10 - Inicial/Final deshabilitados en estados con categoría (RF-005)
  */
 @Component({
   selector: 'app-flujo-form',
@@ -134,15 +145,29 @@ interface InfoEstado {
                     type="radio"
                     name="flujo-inicial"
                     [checked]="grupo.controls.esInicial.value"
-                    [disabled]="!info.activo"
+                    [disabled]="!info.activo || info.categoria !== null"
+                    [attr.aria-describedby]="
+                      info.categoria !== null ? 'flujo-estado-categoria-' + i : null
+                    "
                     (change)="marcarInicial(i)"
                   />
                   Inicial
                 </label>
                 <label class="campo-check">
-                  <input type="checkbox" formControlName="esFinal" />
+                  <input
+                    type="checkbox"
+                    formControlName="esFinal"
+                    [attr.aria-describedby]="
+                      info.categoria !== null ? 'flujo-estado-categoria-' + i : null
+                    "
+                  />
                   Final
                 </label>
+                @if (info.categoria !== null) {
+                  <small class="ayuda" [id]="'flujo-estado-categoria-' + i">
+                    {{ ayudaCategoria(info.categoria) }}
+                  </small>
+                }
                 <span class="acciones-fila">
                   <button
                     type="button"
@@ -221,6 +246,7 @@ export class FlujoFormComponent implements OnInit {
   readonly cancelar = output<void>();
 
   readonly limites = LIMITES_FLUJO;
+  protected readonly ayudaCategoria = ayudaEstadoConCategoria;
   readonly erroresGenerales = signal<readonly string[]>([]);
 
   readonly form = this.fb.group({
@@ -292,19 +318,28 @@ export class FlujoFormComponent implements OnInit {
   infoEstado(estadoId: number): InfoEstado {
     const delCatalogo = this.estados().find((e) => e.id === estadoId);
     if (delCatalogo) {
-      return { nombre: delCatalogo.nombre, activo: delCatalogo.activo };
+      return {
+        nombre: delCatalogo.nombre,
+        activo: delCatalogo.activo,
+        categoria: delCatalogo.categoria ?? null,
+      };
     }
     const delFlujo = this.flujo()?.estados.find((e) => e.estadoId === estadoId);
-    return { nombre: delFlujo?.nombre ?? `Estado ${estadoId}`, activo: delFlujo?.activo ?? false };
+    return {
+      nombre: delFlujo?.nombre ?? `Estado ${estadoId}`,
+      activo: delFlujo?.activo ?? false,
+      categoria: null,
+    };
   }
 
-  /** Agrega el estado elegido al final; si es el primero, queda como inicial. */
+  /** Agrega el estado elegido al final; si es el primero (y sin categoría), queda como inicial. */
   agregar(): void {
     const estadoId = this.estadoAgregar.value;
     if (estadoId === null) {
       return;
     }
-    const esPrimero = this.form.controls.estados.length === 0;
+    const esPrimero =
+      this.form.controls.estados.length === 0 && this.infoEstado(estadoId).categoria === null;
     this.form.controls.estados.push(
       this.crearGrupo({ estadoId, esInicial: esPrimero, esFinal: false }),
     );
@@ -331,8 +366,12 @@ export class FlujoFormComponent implements OnInit {
     this.marcarCambio();
   }
 
-  /** Marca como inicial el estado indicado (exactamente uno, RN-14). */
+  /** Marca como inicial el estado indicado (exactamente uno, RN-14; nunca uno con categoría). */
   marcarInicial(indice: number): void {
+    const grupo = this.form.controls.estados.at(indice);
+    if (!grupo || this.infoEstado(grupo.controls.estadoId.value).categoria !== null) {
+      return;
+    }
     this.form.controls.estados.controls.forEach((grupo, i) =>
       grupo.controls.esInicial.setValue(i === indice, { emitEvent: false }),
     );
@@ -367,12 +406,19 @@ export class FlujoFormComponent implements OnInit {
     });
   }
 
-  /** El check "Final" se deshabilita (y desmarca) en el estado inicial (RN-14). */
+  /**
+   * El check "Final" se deshabilita en el estado inicial (RN-14) y en los estados con categoría
+   * (RF-005 RN-18). En el inicial se desmarca; en los de categoría se conserva el valor para que
+   * el backend informe el 409 si un flujo existente ya lo tuviera marcado.
+   */
   private sincronizarFinalDelInicial(): void {
     for (const grupo of this.form.controls.estados.controls) {
       const final = grupo.controls.esFinal;
+      const conCategoria = this.infoEstado(grupo.controls.estadoId.value).categoria !== null;
       if (grupo.controls.esInicial.value) {
         final.setValue(false, { emitEvent: false });
+        final.disable({ emitEvent: false });
+      } else if (conCategoria) {
         final.disable({ emitEvent: false });
       } else if (final.disabled) {
         final.enable({ emitEvent: false });

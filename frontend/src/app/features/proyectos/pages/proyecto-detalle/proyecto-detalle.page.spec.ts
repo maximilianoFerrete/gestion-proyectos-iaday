@@ -245,4 +245,19 @@ describe('ProyectoDetallePage', () => {
       'No se encontró el recurso',
     );
   });
+
+  // RF-005 CA-46: botón "Seguimiento" del proyecto → T2
+  it('muestra el botón Seguimiento que lleva a /proyectos/3/seguimiento', async () => {
+    const raiz = await crear(PROYECTO);
+
+    expect(accion(raiz, 'Seguimiento')?.getAttribute('href')).toBe('/proyectos/3/seguimiento');
+  });
+
+  // RF-005 CA-46: acción "Seguimiento" de una agrupación → T2 con agrupacionId (también archivado)
+  it('la acción Seguimiento de la agrupación lleva a T2 con agrupacionId', async () => {
+    const raiz = await crear(ARCHIVADO);
+
+    const enlace = raiz.querySelector('[aria-label="Seguimiento de la agrupación Módulo pagos"]');
+    expect(enlace?.getAttribute('href')).toBe('/proyectos/3/seguimiento?agrupacionId=8');
+  });
 });

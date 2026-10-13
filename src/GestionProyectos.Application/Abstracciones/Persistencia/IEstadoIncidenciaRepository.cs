@@ -9,6 +9,7 @@ namespace GestionProyectos.Application.Abstracciones.Persistencia;
 /// <remarks>
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (RF-002)
+/// Modificado: 2026-10-10 - Flujos donde el estado es inicial o final (RF-005, RN-18)
 /// </remarks>
 public interface IEstadoIncidenciaRepository
 {
@@ -29,6 +30,9 @@ public interface IEstadoIncidenciaRepository
 
     /// <summary>Nombres de los flujos donde el estado es el inicial (RN-11).</summary>
     Task<IReadOnlyList<string>> ListarFlujosDondeEsInicialAsync(int estadoId, CancellationToken ct);
+
+    /// <summary>Nombres de los flujos donde el estado es inicial o final (RF-005 RN-18).</summary>
+    Task<IReadOnlyList<string>> ListarFlujosDondeEsInicialOFinalAsync(int estadoId, CancellationToken ct);
 
     /// <summary>Inserta el estado y le asigna el id generado.</summary>
     Task AgregarAsync(EstadoIncidencia estado, CancellationToken ct);

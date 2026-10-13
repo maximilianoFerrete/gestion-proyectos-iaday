@@ -53,6 +53,7 @@ function estado(
     activo,
     cantidadIncidencias: 0,
     flujos: [{ id: 1, nombre: 'Flujo general', esInicial: inicialEnFlujo, esFinal: false }],
+    categoria: null,
   };
 }
 

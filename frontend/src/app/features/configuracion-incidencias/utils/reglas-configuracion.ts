@@ -9,7 +9,7 @@ import { TipoIncidenciaDto } from '../models/tipo-incidencia.model';
  * acciones, elegibilidad en selects y textos de confirmación.
  *
  * Creado: 2026-10-09
- * Modificado: 2026-10-09 - Creación inicial (RF-002)
+ * Modificado: 2026-10-10 - Regla de categoría: ni inicial ni final (RF-005 RN-18)
  */
 
 /** Bloque de C1: un nivel con sus tipos. */
@@ -93,6 +93,11 @@ export function mensajeCrearRelacion(padre: string, hijo: string): string {
 /** Indica si el estado es inicial en algún flujo (RN-11). */
 export function esInicialEnAlgunFlujo(estado: EstadoIncidenciaDto): boolean {
   return estado.flujos.some((f) => f.esInicial);
+}
+
+/** Indica si el estado es inicial o final en algún flujo (no admite categoría, RF-005 RN-18). */
+export function esInicialOFinalEnAlgunFlujo(estado: EstadoIncidenciaDto): boolean {
+  return estado.flujos.some((f) => f.esInicial || f.esFinal);
 }
 
 /** Desactivar estado: activo y no inicial en ningún flujo (C3, RN-11). */

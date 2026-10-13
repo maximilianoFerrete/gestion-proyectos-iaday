@@ -18,6 +18,7 @@ namespace GestionProyectos.Api.Tests.Controllers;
 /// Modificado: 2026-10-09 - Versión inicial (tests RF-001)
 /// Modificado: 2026-10-09 - El admin informa sus permisos en usuario-actual (RF-002, 0.1)
 /// Modificado: 2026-10-10 - Persona no admin recibe permisos vacío (tests RF-002, CA-03)
+/// Modificado: 2026-10-11 - El admin incluye Proyectos.ConfigurarTablero (tests RF-005, RN-31)
 /// </remarks>
 public sealed class CatalogosEndpointsTests : IDisposable
 {
@@ -251,7 +252,8 @@ public sealed class CatalogosEndpointsTests : IDisposable
         // Assert
         Assert.Equal(new UsuarioActualDto(true, 1, "Administrador", "admin@gestionproyectos.local", true)
         {
-            Permisos = ["Configuracion.Incidencias", "Incidencias.CambiarTipo"], // RF-002 0.1, CA-03
+            // RF-002 0.1, CA-03; RF-005 RN-31: el admin también tiene Proyectos.ConfigurarTablero
+            Permisos = ["Configuracion.Incidencias", "Incidencias.CambiarTipo", "Proyectos.ConfigurarTablero"],
         }, dto);
     }
 

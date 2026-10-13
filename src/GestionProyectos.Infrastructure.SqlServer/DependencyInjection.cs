@@ -13,6 +13,7 @@ namespace GestionProyectos.Infrastructure.SqlServer;
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (RF-001)
 /// Modificado: 2026-10-09 - Repositorios de incidencias y su configuración (RF-002)
+/// Modificado: 2026-10-10 - Repositorios de seguimiento y configuración del tablero (RF-005)
 /// </remarks>
 public static class DependencyInjection
 {
@@ -47,6 +48,8 @@ public static class DependencyInjection
         services.AddScoped<IFlujoIncidenciaRepository, FlujoIncidenciaRepository>();
         services.AddScoped<IPrioridadIncidenciaRepository, PrioridadIncidenciaRepository>();
         services.AddScoped<IIncidenciaRepository, IncidenciaRepository>();
+        services.AddScoped<ISeguimientoRepository, SeguimientoRepository>();
+        services.AddScoped<IConfiguracionTableroRepository, ConfiguracionTableroRepository>();
         return services;
     }
 }

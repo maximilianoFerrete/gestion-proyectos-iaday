@@ -43,7 +43,19 @@ Atajo: `.\db\sqlserver\aplicar.ps1`.
 | `NVARCHAR(n)` con literales `N'...'` | Textos | PostgreSQL: `varchar(n)` |
 | `OBJECT_ID`, `COL_LENGTH`, `sys.indexes`, `sys.check_constraints`, `sys.foreign_keys`, `TRY/CATCH`, `THROW`, `XACT_STATE()` | Idempotencia y transacciones de los scripts | PostgreSQL: `IF NOT EXISTS` en DDL, bloques `DO $$ ... $$` |
 | `EXEC (N'ALTER TABLE ... ADD CONSTRAINT CK_...')` (SQL dinámico) | `V006`: CHECK sobre una columna agregada en el mismo lote (evita "Invalid column name" en compilación) | PostgreSQL: no hace falta (DDL transaccional en un bloque `DO`) |
+| Índice no agrupado con `INCLUDE (...)` (columnas no clave) | `IX_Incidencias_ProyectoId_EstadoId` `(ProyectoId, EstadoId) INCLUDE (TipoId, AgrupacionId, ResponsableId, FechaVencimiento)` (`V010`, conteos de seguimiento RF-005) | PostgreSQL ≥ 11: misma sintaxis `INCLUDE`. Otros motores: índice compuesto con todas las columnas en la clave |
 | `OUTPUT INSERTED.*`, `OFFSET ... FETCH NEXT` | Consultas del backend (no en scripts) | PostgreSQL: `RETURNING`, `LIMIT/OFFSET` |
+
+## Dominios con CHECK y upsert (RF-005)
+
+- Las categorías de seguimiento de `EstadosIncidencia.Categoria` se modelan como código de texto
+  con `CHECK` (`CK_EstadosIncidencia_Categoria`: `NULL`, `BLOQUEADA`, `EN_ESPERA`), no como tabla
+  ni como `BIT`s: es SQL estándar y portable. Agregar una categoría = script nuevo que reemplace
+  el `CHECK`. Invariante del backend: un estado con categoría no es inicial ni final en ningún
+  flujo (RF-005 RN-18).
+- `ConfiguracionesTableroProyecto`: el backend hace el upsert con `UPDATE` y, si no afectó filas,
+  `INSERT` en la misma transacción. No se usa `MERGE` (no portable y con problemas de
+  concurrencia conocidos en SQL Server).
 
 ## Integridad: qué garantiza la BD y qué el backend (RF-002)
 

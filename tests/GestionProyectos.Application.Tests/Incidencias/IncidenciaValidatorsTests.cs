@@ -9,6 +9,7 @@ namespace GestionProyectos.Application.Tests.Incidencias;
 /// <remarks>
 /// Creado: 2026-10-10
 /// Modificado: 2026-10-10 - Versión inicial (tests RF-002)
+/// Modificado: 2026-10-11 - Estimación y orden por estimación (tests RF-005, RN-34, CA-42, CA-44)
 /// </remarks>
 public class IncidenciaValidatorsTests
 {
@@ -157,5 +158,89 @@ public class IncidenciaValidatorsTests
         // Assert
         Assert.Equal(OrdenIncidencias.Titulo, filtro.OrdenarPor);
         Assert.False(filtro.Descendente);
+    }
+
+    public static TheoryData<decimal, string> EstimacionesInvalidas => new()
+    {
+        { -0.01m, "La estimación no puede ser negativa." },
+        { -1m, "La estimación no puede ser negativa." },
+        { 1.234m, "La estimación admite hasta 2 decimales." },
+        { 10000000m, "La estimación no puede superar 9.999.999,99 horas." },
+    };
+
+    // RF-005 RN-34, CA-42: estimación negativa, con 3 decimales o mayor al máximo → error en el alta
+    [Theory]
+    [MemberData(nameof(EstimacionesInvalidas))]
+    public void CrearValidator_EstimacionInvalida_DevuelveErrorConMensaje(decimal estimacion, string mensaje)
+    {
+        // Act
+        var resultado = new CrearIncidenciaRequestValidator().Validate(AltaValida with { Estimacion = estimacion });
+
+        // Assert
+        var error = Assert.Single(resultado.Errors);
+        Assert.Equal((nameof(CrearIncidenciaRequest.Estimacion), mensaje), (error.PropertyName, error.ErrorMessage));
+    }
+
+    // RF-005 RN-34, CA-42: mismas reglas de estimación en la edición
+    [Theory]
+    [MemberData(nameof(EstimacionesInvalidas))]
+    public void EditarValidator_EstimacionInvalida_DevuelveErrorConMensaje(decimal estimacion, string mensaje)
+    {
+        // Act
+        var resultado = new EditarIncidenciaRequestValidator().Validate(EdicionValida with { Estimacion = estimacion });
+
+        // Assert
+        var error = Assert.Single(resultado.Errors);
+        Assert.Equal((nameof(EditarIncidenciaRequest.Estimacion), mensaje), (error.PropertyName, error.ErrorMessage));
+    }
+
+    public static TheoryData<decimal?> EstimacionesValidas => new() { null, 0m, 0.25m, 2.5m, 9999999.99m, 1.20m };
+
+    // RF-005 RN-34: null, 0, 0.25, 2.5 y 9999999.99 son válidos en alta
+    [Theory]
+    [MemberData(nameof(EstimacionesValidas))]
+    public void CrearValidator_EstimacionValida_EsValido(decimal? estimacion)
+    {
+        // Act
+        var resultado = new CrearIncidenciaRequestValidator().Validate(AltaValida with { Estimacion = estimacion });
+
+        // Assert
+        Assert.True(resultado.IsValid);
+    }
+
+    // RF-005 RN-34: null, 0, 0.25, 2.5 y 9999999.99 son válidos en edición
+    [Theory]
+    [MemberData(nameof(EstimacionesValidas))]
+    public void EditarValidator_EstimacionValida_EsValido(decimal? estimacion)
+    {
+        // Act
+        var resultado = new EditarIncidenciaRequestValidator().Validate(EdicionValida with { Estimacion = estimacion });
+
+        // Assert
+        Assert.True(resultado.IsValid);
+    }
+
+    // RF-005 C-RF002-04, CA-44: ordenarPor=estimacion es válido en el listado
+    [Fact]
+    public void ListarQueryValidator_OrdenEstimacion_EsValido()
+    {
+        // Act
+        var resultado = new ListarIncidenciasQueryValidator()
+            .Validate(new ListarIncidenciasQuery(OrdenarPor: "Estimacion").Normalizar());
+
+        // Assert
+        Assert.True(resultado.IsValid);
+    }
+
+    // RF-005 CA-44: ordenarPor=estimacion se traduce al orden Estimacion del filtro
+    [Fact]
+    public void CrearFiltro_OrdenEstimacion_DevuelveOrdenEstimacion()
+    {
+        // Act
+        var filtro = OpcionesListadoIncidencias.CrearFiltro(1,
+            new ListarIncidenciasQuery(OrdenarPor: "estimacion", Direccion: "desc").Normalizar());
+
+        // Assert
+        Assert.Equal((OrdenIncidencias.Estimacion, true), (filtro.OrdenarPor, filtro.Descendente));
     }
 }

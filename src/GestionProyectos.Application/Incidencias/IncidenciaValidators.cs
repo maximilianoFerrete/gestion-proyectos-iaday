@@ -9,11 +9,34 @@ namespace GestionProyectos.Application.Incidencias;
 /// <remarks>
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (RF-002)
+/// Modificado: 2026-10-10 - Límites de la estimación (RF-005, RN-34)
 /// </remarks>
 public static class LimitesIncidencia
 {
     public const int LargoMaximoTitulo = 200;
     public const int LargoMaximoDescripcion = 4000;
+    public const decimal EstimacionMaxima = 9999999.99m;
+    public const int DecimalesEstimacion = 2;
+}
+
+/// <summary>
+/// Regla de FluentValidation de la estimación en horas (RF-005 RN-34).
+/// </summary>
+/// <remarks>
+/// Creado: 2026-10-10
+/// Modificado: 2026-10-10 - Versión inicial (RF-005)
+/// </remarks>
+public static class ValidacionEstimacionExtensions
+{
+    /// <summary>Opcional, no negativa, hasta 2 decimales y hasta 9.999.999,99.</summary>
+    public static IRuleBuilderOptions<T, decimal?> Estimacion<T>(this IRuleBuilder<T, decimal?> regla) =>
+        regla
+            .Must(v => v is null || v >= 0)
+            .WithMessage("La estimación no puede ser negativa.")
+            .Must(v => v is null || decimal.Round(v.Value, LimitesIncidencia.DecimalesEstimacion) == v.Value)
+            .WithMessage("La estimación admite hasta 2 decimales.")
+            .Must(v => v is null || v <= LimitesIncidencia.EstimacionMaxima)
+            .WithMessage("La estimación no puede superar 9.999.999,99 horas.");
 }
 
 /// <summary>
@@ -22,10 +45,11 @@ public static class LimitesIncidencia
 /// <remarks>
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (RF-002)
+/// Modificado: 2026-10-10 - Valida la estimación (RF-005, RN-34)
 /// </remarks>
 public class CrearIncidenciaRequestValidator : AbstractValidator<CrearIncidenciaRequest>
 {
-    /// <summary>Define las reglas de tipo, título y descripción.</summary>
+    /// <summary>Define las reglas de tipo, título, descripción y estimación.</summary>
     public CrearIncidenciaRequestValidator()
     {
         RuleFor(x => x.TipoId)
@@ -34,6 +58,7 @@ public class CrearIncidenciaRequestValidator : AbstractValidator<CrearIncidencia
         RuleFor(x => x.Titulo).TextoObligatorio("El título", LimitesIncidencia.LargoMaximoTitulo);
         RuleFor(x => x.Descripcion)
             .TextoObligatorio("La descripción", LimitesIncidencia.LargoMaximoDescripcion, femenino: true);
+        RuleFor(x => x.Estimacion).Estimacion();
     }
 }
 
@@ -43,10 +68,11 @@ public class CrearIncidenciaRequestValidator : AbstractValidator<CrearIncidencia
 /// <remarks>
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (RF-002)
+/// Modificado: 2026-10-10 - Valida la estimación (RF-005, RN-34)
 /// </remarks>
 public class EditarIncidenciaRequestValidator : AbstractValidator<EditarIncidenciaRequest>
 {
-    /// <summary>Define las reglas de título, descripción, estado y prioridad.</summary>
+    /// <summary>Define las reglas de título, descripción, estado, prioridad y estimación.</summary>
     public EditarIncidenciaRequestValidator()
     {
         RuleFor(x => x.Titulo).TextoObligatorio("El título", LimitesIncidencia.LargoMaximoTitulo);
@@ -58,6 +84,7 @@ public class EditarIncidenciaRequestValidator : AbstractValidator<EditarIncidenc
         RuleFor(x => x.PrioridadId)
             .NotNull().WithMessage("La prioridad es obligatoria.")
             .GreaterThan(0).WithMessage("La prioridad es obligatoria.");
+        RuleFor(x => x.Estimacion).Estimacion();
     }
 }
 
@@ -85,6 +112,7 @@ public class CambiarTipoIncidenciaRequestValidator : AbstractValidator<CambiarTi
 /// <remarks>
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (RF-002)
+/// Modificado: 2026-10-10 - Admite ordenarPor=estimacion (RF-005)
 /// </remarks>
 public class ListarIncidenciasQueryValidator : AbstractValidator<ListarIncidenciasQuery>
 {
@@ -114,10 +142,29 @@ public class ListarIncidenciasQueryValidator : AbstractValidator<ListarIncidenci
         RuleFor(x => x.OrdenarPor)
             .Must(v => v is null || OpcionesListadoIncidencias.Ordenes.ContainsKey(v))
             .WithMessage("Valores permitidos para ordenarPor: numero, titulo, tipo, estado, prioridad, "
-                + "responsable, fechaVencimiento, fechaCreacion.");
+                + "responsable, fechaVencimiento, fechaCreacion, estimacion.");
 
         RuleFor(x => x.Direccion)
             .Must(v => v is null or OpcionesListadoIncidencias.DireccionAsc or OpcionesListadoIncidencias.DireccionDesc)
             .WithMessage("Valores permitidos para direccion: asc, desc.");
+    }
+}
+
+/// <summary>
+/// Validación de los parámetros del árbol de incidencias: ámbito excluyente (RF-005, C-RF002-04).
+/// </summary>
+/// <remarks>
+/// Creado: 2026-10-10
+/// Modificado: 2026-10-10 - Versión inicial (RF-005)
+/// </remarks>
+public class ArbolIncidenciasQueryValidator : AbstractValidator<ArbolIncidenciasQuery>
+{
+    /// <summary>Define la regla de agrupacionId y sinAgrupacion excluyentes.</summary>
+    public ArbolIncidenciasQueryValidator()
+    {
+        RuleFor(x => x.AgrupacionId)
+            .Null()
+            .When(x => x.SinAgrupacion == true)
+            .WithMessage("agrupacionId y sinAgrupacion son excluyentes.");
     }
 }

@@ -1,20 +1,12 @@
 import { esFechaIso } from '../../../shared/utils/fechas';
 
 /**
- * Reglas puras de vencimiento de incidencias (I1, RN-31, DA-09).
+ * Reglas puras de vencimiento de incidencias (RN-31). "Vencida" ya no se calcula en el navegador:
+ * la API devuelve `vencida` con la fecha de referencia del servidor (RF-005 RN-36).
  *
  * Creado: 2026-10-09
- * Modificado: 2026-10-09 - Creación inicial (RF-002)
+ * Modificado: 2026-10-10 - Se elimina `estaVencida` (vencida desde el servidor, RF-005)
  */
-
-/** Vencida: tiene fecha anterior a hoy y el estado no es final (estilo de alerta en I1/I2/I3). */
-export function estaVencida(
-  fechaVencimiento: string | null,
-  esFinal: boolean,
-  hoy: string,
-): boolean {
-  return !esFinal && esFechaIso(fechaVencimiento) && fechaVencimiento < hoy;
-}
 
 /**
  * RN-31: la hija no puede vencer después que el padre. Igualdad válida; si alguna fecha falta,

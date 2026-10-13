@@ -1,13 +1,12 @@
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { fechaHoyIso } from '../../../../shared/utils/fechas';
+import { formatearEstimacion } from '../../../../shared/utils/estimacion';
 import {
   DireccionOrdenIncidencias,
   IncidenciaResumenDto,
   OrdenIncidencias,
 } from '../../models/incidencia.model';
-import { estaVencida } from '../../utils/vencimiento';
 import { BadgeEstadoIncidenciaComponent } from '../badge-estado-incidencia/badge-estado-incidencia.component';
 
 /** Columna de la tabla; `orden` null = no ordenable (no está en la lista blanca). */
@@ -24,17 +23,18 @@ const COLUMNAS: readonly ColumnaIncidencias[] = [
   { titulo: 'Estado', orden: 'estado' },
   { titulo: 'Prioridad', orden: 'prioridad' },
   { titulo: 'Responsable', orden: 'responsable' },
+  { titulo: 'Estimación', orden: 'estimacion' },
   { titulo: 'Vencimiento', orden: 'fechaVencimiento' },
   { titulo: 'Agrupación', orden: null },
   { titulo: 'Padre', orden: null },
 ];
 
 /**
- * Tabla del listado de incidencias (I1): encabezados ordenables, estado con badge, vencidas no
- * finales con estilo de alerta y clic en fila → detalle.
+ * Tabla del listado de incidencias (I1): encabezados ordenables, estado con badge, vencidas con
+ * estilo de alerta según `vencida` de la API (RF-005 RN-36), estimación y clic en fila → detalle.
  *
  * Creado: 2026-10-09
- * Modificado: 2026-10-09 - Creación inicial (RF-002)
+ * Modificado: 2026-10-10 - Columna Estimación y vencida desde el servidor (RF-005)
  */
 @Component({
   selector: 'app-incidencias-tabla',
@@ -94,13 +94,14 @@ const COLUMNAS: readonly ColumnaIncidencias[] = [
                   <span class="texto-secundario">Sin responsable</span>
                 }
               </td>
-              <td [class.texto-alerta]="vencida(incidencia)">
+              <td class="celda-numero">{{ estimacion(incidencia.estimacion) }}</td>
+              <td [class.texto-alerta]="incidencia.vencida">
                 {{
                   incidencia.fechaVencimiento
                     ? (incidencia.fechaVencimiento | date: 'dd/MM/yyyy')
                     : '-'
                 }}
-                @if (vencida(incidencia)) {
+                @if (incidencia.vencida) {
                   <span class="sr-only">(vencida)</span>
                 }
               </td>
@@ -129,19 +130,13 @@ export class IncidenciasTablaComponent {
   readonly incidencias = input.required<readonly IncidenciaResumenDto[]>();
   readonly ordenarPor = input.required<OrdenIncidencias>();
   readonly direccion = input.required<DireccionOrdenIncidencias>();
-  /** Fecha de hoy `yyyy-MM-dd` (inyectable para tests). */
-  readonly hoy = input<string>(fechaHoyIso());
   /** Emite la columna clickeada para ordenar. */
   readonly ordenar = output<OrdenIncidencias>();
   /** Emite el id de la incidencia seleccionada. */
   readonly seleccionar = output<number>();
 
   protected readonly columnas = COLUMNAS;
-
-  /** Indica si la incidencia está vencida y su estado no es final. */
-  vencida(incidencia: IncidenciaResumenDto): boolean {
-    return estaVencida(incidencia.fechaVencimiento, incidencia.estado.esFinal, this.hoy());
-  }
+  protected readonly estimacion = formatearEstimacion;
 
   /** Valor de `aria-sort` para la columna. */
   ariaSort(columna: OrdenIncidencias): 'ascending' | 'descending' | 'none' {

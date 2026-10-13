@@ -2,6 +2,7 @@ using GestionProyectos.Application.Abstracciones;
 using GestionProyectos.Application.Abstracciones.Persistencia;
 using GestionProyectos.Application.FlujosIncidencia;
 using GestionProyectos.Application.Tests.Comun;
+using GestionProyectos.Domain.Comun;
 using GestionProyectos.Domain.Entidades;
 using GestionProyectos.Domain.Excepciones;
 using GestionProyectos.Domain.Reglas;
@@ -17,6 +18,7 @@ namespace GestionProyectos.Application.Tests.FlujosIncidencia;
 /// <remarks>
 /// Creado: 2026-10-10
 /// Modificado: 2026-10-10 - Versión inicial (tests RF-002)
+/// Modificado: 2026-10-11 - Estados con categoría ni inicial ni final (tests RF-005, RN-18)
 /// </remarks>
 public class FlujoIncidenciaServiceTests
 {
@@ -178,5 +180,67 @@ public class FlujoIncidenciaServiceTests
 
         // Assert
         Assert.Equal(CodigosError.FlujoNoEncontrado, ex.Codigo);
+    }
+
+    private const int EstadoBloqueada = 6;
+
+    private void CatalogoConBloqueada() =>
+        EstadosDelCatalogo(Estado(PorHacer), Estado(EnProgreso), Estado(Hecho),
+            Estado(EstadoBloqueada, "Bloqueada", categoria: CategoriasEstadoIncidencia.Bloqueada));
+
+    // RF-005 RN-18 (b), CA-39: marcar como final un estado con categoría → 409 sin insertar
+    [Fact]
+    public async Task CrearAsync_EstadoConCategoriaFinal_LanzaEstadoCategoriaIncompatible()
+    {
+        // Arrange
+        CatalogoConBloqueada();
+
+        // Act
+        var ex = await Assert.ThrowsAsync<ConflictoException>(() => Sut().CrearAsync(new FlujoIncidenciaRequest(
+            "Con bloqueo", null, [new(PorHacer, true, false), new(EstadoBloqueada, false, true)]),
+            CancellationToken.None));
+
+        // Assert
+        Assert.Equal(CodigosError.EstadoCategoriaIncompatible, ex.Codigo);
+        Assert.Contains("'Bloqueada'", ex.Message);
+        await _flujos.DidNotReceive().AgregarAsync(Arg.Any<FlujoIncidencia>(), Arg.Any<CancellationToken>());
+    }
+
+    // RF-005 RN-18 (b), CA-39: marcar como inicial un estado con categoría → 409 sin actualizar
+    [Fact]
+    public async Task EditarAsync_EstadoConCategoriaInicial_LanzaEstadoCategoriaIncompatible()
+    {
+        // Arrange
+        CatalogoConBloqueada();
+
+        // Act
+        var ex = await Assert.ThrowsAsync<ConflictoException>(() => Sut().EditarAsync(FlujoGeneral, General with
+        {
+            Estados = [new(EstadoBloqueada, true, false), new(PorHacer, false, false), new(EnProgreso, false, false),
+                new(Hecho, false, true)],
+        }, CancellationToken.None));
+
+        // Assert
+        Assert.Equal(CodigosError.EstadoCategoriaIncompatible, ex.Codigo);
+        Assert.Contains("Flujo general", ex.Message);
+        await _flujos.DidNotReceive().ActualizarAsync(Arg.Any<FlujoIncidencia>(), Arg.Any<CancellationToken>());
+    }
+
+    // RF-005 RN-18: estado con categoría ni inicial ni final → se guarda
+    [Fact]
+    public async Task EditarAsync_EstadoConCategoriaIntermedio_Actualiza()
+    {
+        // Arrange
+        CatalogoConBloqueada();
+
+        // Act
+        await Sut().EditarAsync(FlujoGeneral, General with
+        {
+            Estados = [new(PorHacer, true, false), new(EnProgreso, false, false), new(EstadoBloqueada, false, false),
+                new(Hecho, false, true)],
+        }, CancellationToken.None);
+
+        // Assert
+        await _flujos.Received(1).ActualizarAsync(_general, Arg.Any<CancellationToken>());
     }
 }

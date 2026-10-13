@@ -8,6 +8,7 @@ namespace GestionProyectos.Application.Incidencias;
 /// <remarks>
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (RF-002)
+/// Modificado: 2026-10-10 - Agrega Estimacion opcional (RF-005, RN-34)
 /// </remarks>
 public sealed record CrearIncidenciaRequest(
     int? TipoId,
@@ -17,7 +18,8 @@ public sealed record CrearIncidenciaRequest(
     int? ResponsableId,
     DateOnly? FechaVencimiento,
     int? AgrupacionId,
-    int? PadreId)
+    int? PadreId,
+    decimal? Estimacion = null)
 {
     /// <summary>Devuelve una copia con los textos normalizados (RN-39).</summary>
     public CrearIncidenciaRequest Normalizar() => this with
@@ -29,10 +31,12 @@ public sealed record CrearIncidenciaRequest(
 
 /// <summary>
 /// Datos para editar una incidencia (reemplazo completo); el tipo no se acepta (RN-02).
+/// Sin Estimacion (o null) la incidencia queda sin estimar (RF-005 RN-34).
 /// </summary>
 /// <remarks>
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (RF-002)
+/// Modificado: 2026-10-10 - Agrega Estimacion opcional (RF-005, RN-34)
 /// </remarks>
 public sealed record EditarIncidenciaRequest(
     string? Titulo,
@@ -42,7 +46,8 @@ public sealed record EditarIncidenciaRequest(
     int? ResponsableId,
     DateOnly? FechaVencimiento,
     int? AgrupacionId,
-    int? PadreId)
+    int? PadreId,
+    decimal? Estimacion = null)
 {
     /// <summary>Devuelve una copia con los textos normalizados (RN-39).</summary>
     public EditarIncidenciaRequest Normalizar() => this with
@@ -89,4 +94,17 @@ public sealed record ListarIncidenciasQuery(
         OrdenarPor = TextoEntrada.NormalizarMinusculas(OrdenarPor),
         Direccion = TextoEntrada.NormalizarMinusculas(Direccion),
     };
+}
+
+/// <summary>
+/// Parámetros de query del árbol de incidencias: ámbito opcional (RF-005, C-RF002-04).
+/// </summary>
+/// <remarks>
+/// Creado: 2026-10-10
+/// Modificado: 2026-10-10 - Versión inicial (RF-005)
+/// </remarks>
+public sealed record ArbolIncidenciasQuery(int? AgrupacionId = null, bool? SinAgrupacion = null)
+{
+    /// <summary>Indica si se pidió algún filtro de ámbito.</summary>
+    public bool TieneFiltros => AgrupacionId is not null || SinAgrupacion == true;
 }

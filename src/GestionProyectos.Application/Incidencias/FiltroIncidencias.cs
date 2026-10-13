@@ -6,6 +6,7 @@ namespace GestionProyectos.Application.Incidencias;
 /// <remarks>
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (RF-002)
+/// Modificado: 2026-10-10 - Agrega Estimacion (RF-005, C-RF002-04)
 /// </remarks>
 public enum OrdenIncidencias
 {
@@ -17,6 +18,7 @@ public enum OrdenIncidencias
     Responsable,
     FechaVencimiento,
     FechaCreacion,
+    Estimacion,
 }
 
 /// <summary>
@@ -47,6 +49,7 @@ public sealed record FiltroIncidencias(
 /// <remarks>
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (RF-002)
+/// Modificado: 2026-10-10 - Agrega el orden "estimacion" (RF-005)
 /// </remarks>
 public static class OpcionesListadoIncidencias
 {
@@ -69,6 +72,7 @@ public static class OpcionesListadoIncidencias
             ["responsable"] = OrdenIncidencias.Responsable,
             ["fechavencimiento"] = OrdenIncidencias.FechaVencimiento,
             ["fechacreacion"] = OrdenIncidencias.FechaCreacion,
+            ["estimacion"] = OrdenIncidencias.Estimacion,
         };
 
     /// <summary>Convierte la query normalizada y validada en el filtro con defaults.</summary>

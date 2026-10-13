@@ -5,7 +5,7 @@ import { NodoArbolIncidenciaDto } from '../models/incidencia.model';
  * `GET .../incidencias/arbol`.
  *
  * Creado: 2026-10-09
- * Modificado: 2026-10-09 - Creación inicial (RF-002)
+ * Modificado: 2026-10-10 - `idsExpandidosHastaNivel` (RF-005 RN-22)
  */
 
 /** Nodo del árbol: la incidencia y sus hijas ordenadas por número. */
@@ -81,4 +81,22 @@ export function alternarId(ids: ReadonlySet<number>, id: number): Set<number> {
     nuevo.add(id);
   }
   return nuevo;
+}
+
+/**
+ * "Expandir hasta el nivel N" (RF-005 RN-22): ids de los nodos con hijos cuyo tipo tiene
+ * `nivelNumero < N`; el resto queda colapsado. Con N = 1 no se expande ninguno.
+ */
+export function idsExpandidosHastaNivel(arbol: readonly NodoArbol[], nivel: number): Set<number> {
+  const ids = new Set<number>();
+  const recorrer = (nodos: readonly NodoArbol[]): void => {
+    for (const nodo of nodos) {
+      if (nodo.hijos.length > 0 && nodo.incidencia.tipo.nivelNumero < nivel) {
+        ids.add(nodo.incidencia.id);
+      }
+      recorrer(nodo.hijos);
+    }
+  };
+  recorrer(arbol);
+  return ids;
 }

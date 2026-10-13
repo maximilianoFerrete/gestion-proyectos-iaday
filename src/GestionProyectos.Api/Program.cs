@@ -8,6 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddApiControllers();
 builder.Services.AddManejoErrores();
 builder.Services.AddAplicacion();
+builder.Services.AddFechaReferencia(builder.Configuration);
 // Proveedor de datos: para cambiar de motor se reemplaza solo esta línea.
 builder.Services.AddInfraestructuraSqlServer(builder.Configuration);
 builder.Services.AddSeguridad(builder.Configuration);

@@ -1,5 +1,6 @@
 using FluentValidation;
 using GestionProyectos.Application.Comun;
+using GestionProyectos.Domain.Comun;
 
 namespace GestionProyectos.Application.EstadosIncidencia;
 
@@ -18,6 +19,7 @@ public sealed record FlujoDeEstadoDto(int Id, string Nombre, bool EsInicial, boo
 /// <remarks>
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (RF-002)
+/// Modificado: 2026-10-10 - Agrega Categoria de seguimiento (RF-005, RN-17)
 /// </remarks>
 public sealed record EstadoIncidenciaDto(
     int Id,
@@ -26,22 +28,26 @@ public sealed record EstadoIncidenciaDto(
     int Orden,
     bool Activo,
     int CantidadIncidencias,
-    IReadOnlyList<FlujoDeEstadoDto> Flujos);
+    IReadOnlyList<FlujoDeEstadoDto> Flujos,
+    string? Categoria = null);
 
 /// <summary>
-/// Datos para crear o editar un estado de incidencia (RN-10).
+/// Datos para crear o editar un estado de incidencia (RN-10); la categoría es opcional (RF-005 RN-17).
 /// </summary>
 /// <remarks>
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (RF-002)
+/// Modificado: 2026-10-10 - Agrega Categoria (RF-005, RN-17)
 /// </remarks>
-public sealed record EstadoIncidenciaRequest(string? Nombre, string? Descripcion, int? Orden)
+public sealed record EstadoIncidenciaRequest(string? Nombre, string? Descripcion, int? Orden,
+    string? Categoria = null)
 {
-    /// <summary>Devuelve una copia con los textos normalizados (RN-39).</summary>
+    /// <summary>Devuelve una copia con textos normalizados y la categoría en mayúsculas (RN-39).</summary>
     public EstadoIncidenciaRequest Normalizar() => this with
     {
         Nombre = TextoEntrada.Normalizar(Nombre),
         Descripcion = TextoEntrada.Normalizar(Descripcion),
+        Categoria = TextoEntrada.Normalizar(Categoria)?.ToUpperInvariant(),
     };
 }
 
@@ -66,10 +72,11 @@ public static class LimitesCatalogoIncidencia
 /// <remarks>
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (RF-002)
+/// Modificado: 2026-10-10 - Valida la categoría (RF-005, RN-17)
 /// </remarks>
 public class EstadoIncidenciaRequestValidator : AbstractValidator<EstadoIncidenciaRequest>
 {
-    /// <summary>Define las reglas de nombre, descripción y orden.</summary>
+    /// <summary>Define las reglas de nombre, descripción, orden y categoría.</summary>
     public EstadoIncidenciaRequestValidator()
     {
         RuleFor(x => x.Nombre).TextoObligatorio("El nombre", LimitesCatalogoIncidencia.LargoMaximoNombre);
@@ -80,5 +87,8 @@ public class EstadoIncidenciaRequestValidator : AbstractValidator<EstadoIncidenc
             .InclusiveBetween(LimitesCatalogoIncidencia.OrdenMinimo, LimitesCatalogoIncidencia.OrdenMaximo)
             .WithMessage($"El orden debe estar entre {LimitesCatalogoIncidencia.OrdenMinimo} y "
                 + $"{LimitesCatalogoIncidencia.OrdenMaximo}.");
+        RuleFor(x => x.Categoria)
+            .Must(CategoriasEstadoIncidencia.EsValida)
+            .WithMessage("Valores permitidos para categoria: BLOQUEADA, EN_ESPERA o null.");
     }
 }

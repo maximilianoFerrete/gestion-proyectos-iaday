@@ -20,6 +20,7 @@ namespace GestionProyectos.Api.Tests.Seguridad;
 /// <remarks>
 /// Creado: 2026-10-10
 /// Modificado: 2026-10-10 - Versión inicial (tests RF-002)
+/// Modificado: 2026-10-11 - Tres permisos con Proyectos.ConfigurarTablero (tests RF-005)
 /// </remarks>
 public class PermisosSeguridadTests
 {
@@ -135,7 +136,7 @@ public class PermisosSeguridadTests
         var principal = PrincipalCon([.. Permisos.Todos]);
 
         // Assert
-        Assert.Equal(["Configuracion.Incidencias", "Incidencias.CambiarTipo"],
+        Assert.Equal(["Configuracion.Incidencias", "Incidencias.CambiarTipo", "Proyectos.ConfigurarTablero"],
             principal.FindAll(EsquemaProvisional.ClaimPermiso).Select(c => c.Value).Order());
     }
 
@@ -178,7 +179,8 @@ public class PermisosSeguridadTests
         var permisos = sut.Permisos;
 
         // Assert
-        Assert.Equal(["Configuracion.Incidencias", "Incidencias.CambiarTipo"], permisos.Order());
+        Assert.Equal(["Configuracion.Incidencias", "Incidencias.CambiarTipo", "Proyectos.ConfigurarTablero"],
+            permisos.Order());
     }
 
     // Spec 0.1: anónimo → sin permisos

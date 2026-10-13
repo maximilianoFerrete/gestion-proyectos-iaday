@@ -9,6 +9,7 @@ using GestionProyectos.Application.Personas;
 using GestionProyectos.Application.PrioridadesIncidencia;
 using GestionProyectos.Application.Proyectos;
 using GestionProyectos.Application.RelacionesTiposIncidencia;
+using GestionProyectos.Application.Seguimiento;
 using GestionProyectos.Application.TiposIncidencia;
 using GestionProyectos.Domain.Entidades;
 using Microsoft.AspNetCore.Hosting;
@@ -28,6 +29,7 @@ namespace GestionProyectos.Api.Tests.Infraestructura;
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (tests RF-001)
 /// Modificado: 2026-10-10 - Sustitutos de servicios y repositorios de incidencias (tests RF-002)
+/// Modificado: 2026-10-11 - Sustitutos de seguimiento y configuración del tablero (tests RF-005)
 /// </remarks>
 public sealed class ApiFactory : WebApplicationFactory<Program>
 {
@@ -48,6 +50,8 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
     public IEstadoIncidenciaService EstadosIncidencia { get; } = Substitute.For<IEstadoIncidenciaService>();
     public IFlujoIncidenciaService Flujos { get; } = Substitute.For<IFlujoIncidenciaService>();
     public IPrioridadIncidenciaService Prioridades { get; } = Substitute.For<IPrioridadIncidenciaService>();
+    public ISeguimientoService Seguimiento { get; } = Substitute.For<ISeguimientoService>();
+    public IConfiguracionTableroService ConfiguracionTablero { get; } = Substitute.For<IConfiguracionTableroService>();
 
     /// <summary>Repositorio de personas usado por la identificación del usuario actual.</summary>
     public IPersonaRepository RepoPersonas { get; } = Substitute.For<IPersonaRepository>();
@@ -110,6 +114,10 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
             Reemplazar(services, EstadosIncidencia);
             Reemplazar(services, Flujos);
             Reemplazar(services, Prioridades);
+            Reemplazar(services, Substitute.For<ISeguimientoRepository>());
+            Reemplazar(services, Substitute.For<IConfiguracionTableroRepository>());
+            Reemplazar(services, Seguimiento);
+            Reemplazar(services, ConfiguracionTablero);
         });
     }
 

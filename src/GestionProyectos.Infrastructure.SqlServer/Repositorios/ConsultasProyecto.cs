@@ -9,6 +9,7 @@ namespace GestionProyectos.Infrastructure.SqlServer.Repositorios;
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (RF-001)
 /// Modificado: 2026-10-09 - El detalle incluye CantidadIncidencias (RF-002)
+/// Modificado: 2026-10-10 - CondicionArchivados reutilizable por el seguimiento (RF-005)
 /// </remarks>
 internal static class ConsultasProyecto
 {
@@ -66,7 +67,8 @@ internal static class ConsultasProyecto
             """;
     }
 
-    private static string CondicionArchivados(FiltroArchivados archivados) => archivados switch
+    /// <summary>Condición fija (lista blanca) sobre p.FechaArchivado según el filtro de archivados.</summary>
+    public static string CondicionArchivados(FiltroArchivados archivados) => archivados switch
     {
         FiltroArchivados.Excluir => "p.FechaArchivado IS NULL",
         FiltroArchivados.Solo => "p.FechaArchivado IS NOT NULL",

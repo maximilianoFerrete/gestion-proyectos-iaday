@@ -12,7 +12,7 @@ import { UsuarioSelectorComponent } from './usuario-selector.component';
  * contenido ruteado; toasts y diálogo de confirmación únicos.
  *
  * Creado: 2026-10-09
- * Modificado: 2026-10-09 - Menú de configuración de incidencias (RF-002)
+ * Modificado: 2026-10-10 - Ítem de menú Seguimiento (RF-005)
  */
 @Component({
   selector: 'app-shell',
@@ -31,6 +31,7 @@ import { UsuarioSelectorComponent } from './usuario-selector.component';
       <span class="titulo-app">Gestión de Proyectos</span>
       <nav class="menu" aria-label="Menú principal">
         <a routerLink="/proyectos" routerLinkActive="activo">Proyectos</a>
+        <a routerLink="/seguimiento" routerLinkActive="activo">Seguimiento</a>
         <a routerLink="/personas" routerLinkActive="activo">Personas</a>
         <span class="menu-grupo">
           <span class="menu-grupo-titulo">Configuración</span>

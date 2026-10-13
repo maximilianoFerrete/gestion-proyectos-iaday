@@ -1,14 +1,15 @@
 import { PersonaRefDto } from '../../personas/models/persona.model';
+import { CategoriaEstadoIncidencia } from '../../configuracion-incidencias/models/estado-incidencia.model';
 import { TipoReferenciaDto } from '../../configuracion-incidencias/models/relacion-tipo-incidencia.model';
 
 /**
  * Modelos de Incidencias según el contrato API de RF-002.
  *
  * Creado: 2026-10-09
- * Modificado: 2026-10-09 - Creación inicial (RF-002)
+ * Modificado: 2026-10-10 - `categoria`, `vencida` (servidor) y `estimacion` (RF-005)
  */
 
-export type { TipoReferenciaDto };
+export type { CategoriaEstadoIncidencia, TipoReferenciaDto };
 
 /** `EstadoIncidenciaReferenciaDto` (`esFinal` según el flujo del tipo de la incidencia). */
 export interface EstadoIncidenciaReferenciaDto {
@@ -16,6 +17,8 @@ export interface EstadoIncidenciaReferenciaDto {
   readonly nombre: string;
   readonly activo: boolean;
   readonly esFinal: boolean;
+  /** Categoría de seguimiento del estado (RF-005). */
+  readonly categoria: CategoriaEstadoIncidencia | null;
 }
 
 /** `PrioridadReferenciaDto`. */
@@ -42,6 +45,8 @@ export interface IncidenciaReferenciaDto {
   readonly responsable: PersonaRefDto | null;
   /** Fecha sin hora `yyyy-MM-dd` o null. */
   readonly fechaVencimiento: string | null;
+  /** Vencida según la fecha de referencia del servidor (RF-005 RN-36). */
+  readonly vencida: boolean;
 }
 
 /** Referencia mínima al padre en el listado. */
@@ -61,6 +66,10 @@ export interface IncidenciaResumenDto {
   readonly prioridad: PrioridadReferenciaDto;
   readonly responsable: PersonaRefDto | null;
   readonly fechaVencimiento: string | null;
+  /** Vencida según la fecha de referencia del servidor (RF-005 RN-36). */
+  readonly vencida: boolean;
+  /** Estimación en horas o null (RF-005 RN-34). */
+  readonly estimacion: number | null;
   readonly agrupacion: AgrupacionReferenciaDto | null;
   readonly padre: PadreResumenDto | null;
   readonly cantidadHijas: number;
@@ -78,6 +87,8 @@ export interface NodoArbolIncidenciaDto {
   readonly prioridad: PrioridadReferenciaDto;
   readonly responsable: PersonaRefDto | null;
   readonly fechaVencimiento: string | null;
+  /** Vencida según la fecha de referencia del servidor (RF-005 RN-36). */
+  readonly vencida: boolean;
   readonly agrupacion: AgrupacionReferenciaDto | null;
 }
 
@@ -108,6 +119,10 @@ export interface IncidenciaDto {
   readonly prioridad: PrioridadReferenciaDto;
   readonly responsable: PersonaRefDto | null;
   readonly fechaVencimiento: string | null;
+  /** Vencida según la fecha de referencia del servidor (RF-005 RN-36). */
+  readonly vencida: boolean;
+  /** Estimación en horas o null (RF-005 RN-34). */
+  readonly estimacion: number | null;
   readonly agrupacion: AgrupacionReferenciaDto | null;
   /** `padre != null`: la agrupación se hereda del padre (RN-28). */
   readonly agrupacionHeredada: boolean;
@@ -131,6 +146,8 @@ export interface CrearIncidenciaRequest {
   readonly fechaVencimiento: string | null;
   readonly agrupacionId: number | null;
   readonly padreId: number | null;
+  /** Estimación en horas o null (RF-005). */
+  readonly estimacion: number | null;
 }
 
 /** Body de `PUT /api/proyectos/{proyectoId}/incidencias/{id}` (reemplazo completo, sin tipo). */
@@ -143,6 +160,8 @@ export interface EditarIncidenciaRequest {
   readonly fechaVencimiento: string | null;
   readonly agrupacionId: number | null;
   readonly padreId: number | null;
+  /** Estimación en horas; null la deja sin estimar (reemplazo completo, RF-005 RN-34). */
+  readonly estimacion: number | null;
 }
 
 /** Body de `POST .../incidencias/{id}/cambiar-tipo` (`estadoId` opcional, RN-23). */
@@ -160,7 +179,8 @@ export type OrdenIncidencias =
   | 'prioridad'
   | 'responsable'
   | 'fechaVencimiento'
-  | 'fechaCreacion';
+  | 'fechaCreacion'
+  | 'estimacion';
 
 export type DireccionOrdenIncidencias = 'asc' | 'desc';
 
@@ -192,6 +212,7 @@ export const VALORES_ORDEN_INCIDENCIAS: readonly OrdenIncidencias[] = [
   'responsable',
   'fechaVencimiento',
   'fechaCreacion',
+  'estimacion',
 ];
 export const VALORES_DIRECCION_INCIDENCIAS: readonly DireccionOrdenIncidencias[] = ['asc', 'desc'];
 
@@ -215,3 +236,24 @@ export const LIMITES_INCIDENCIA = {
   /** Cantidad de candidatos a padre que se piden al buscar. */
   resultadosBusquedaPadre: 10,
 } as const;
+
+/** Límites de la estimación en horas (RF-005 RN-34). */
+export const LIMITES_ESTIMACION = {
+  min: 0,
+  max: 9999999.99,
+  decimales: 2,
+  paso: 0.25,
+} as const;
+
+/** Mensajes de validación de la estimación (mismos textos que el backend, RF-005). */
+export const MENSAJES_ESTIMACION = {
+  negativa: 'La estimación no puede ser negativa.',
+  decimales: 'La estimación admite hasta 2 decimales.',
+  maximo: 'La estimación no puede superar 9.999.999,99 horas.',
+} as const;
+
+/** Ámbito del árbol de incidencias (RF-005: `agrupacionId` / `sinAgrupacion`, excluyentes). */
+export interface AmbitoArbolIncidencias {
+  readonly agrupacionId?: number | null;
+  readonly sinAgrupacion?: boolean;
+}

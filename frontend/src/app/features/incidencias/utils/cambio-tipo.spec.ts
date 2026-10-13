@@ -85,6 +85,7 @@ describe('cambio-tipo', () => {
       nombre: 'En progreso',
       activo: true,
       esFinal: false,
+      categoria: null,
     });
 
     expect(opciones.map((o) => o.valor)).toEqual([4, 3]);
@@ -103,6 +104,7 @@ describe('cambio-tipo', () => {
       nombre: 'En progreso',
       activo: false,
       esFinal: false,
+      categoria: null,
     });
 
     expect(opciones).toContainEqual({ valor: 2, etiqueta: 'En progreso (inactivo)' });

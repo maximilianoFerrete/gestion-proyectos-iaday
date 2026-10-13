@@ -12,13 +12,14 @@ namespace GestionProyectos.Infrastructure.SqlServer.Repositorios;
 /// <remarks>
 /// Creado: 2026-10-09
 /// Modificado: 2026-10-09 - Versión inicial (RF-002)
+/// Modificado: 2026-10-10 - Informa la categoría de cada estado del flujo (RF-005)
 /// </remarks>
 internal sealed class FlujoIncidenciaRepository(EjecutorSql sql) : IFlujoIncidenciaRepository
 {
     private const string ColumnasFlujo = "Id, Nombre, Descripcion, FechaCreacion, FechaModificacion";
 
     private const string ConsultaEstados = """
-        SELECT fe.FlujoId, fe.EstadoId, e.Nombre, e.Activo, fe.Orden, fe.EsInicial, fe.EsFinal
+        SELECT fe.FlujoId, fe.EstadoId, e.Nombre, e.Activo, fe.Orden, fe.EsInicial, fe.EsFinal, e.Categoria
         FROM dbo.FlujosIncidenciaEstados fe
         INNER JOIN dbo.EstadosIncidencia e ON e.Id = fe.EstadoId
         """;
@@ -136,7 +137,7 @@ internal sealed class FlujoIncidenciaRepository(EjecutorSql sql) : IFlujoInciden
 
         return flujos.Select(f => new FlujoIncidenciaDto(f.Id, f.Nombre, f.Descripcion,
                 estados[f.Id].Select(e => new EstadoDeFlujoDto(e.EstadoId, e.Nombre, e.Activo, e.Orden, e.EsInicial,
-                    e.EsFinal)).ToList(),
+                    e.EsFinal, e.Categoria)).ToList(),
                 tipos[f.Id].Select(t => new TipoDeFlujoDto(t.Id, t.Nombre, t.Activo)).ToList(),
                 SqlUtil.Utc(f.FechaCreacion), SqlUtil.Utc(f.FechaModificacion)))
             .ToList();
@@ -153,14 +154,15 @@ internal sealed class FlujoIncidenciaRepository(EjecutorSql sql) : IFlujoInciden
         DateTime? FechaModificacion);
 
     /// <summary>
-    /// Estado de un flujo con su nombre y actividad.
+    /// Estado de un flujo con su nombre, actividad y categoría.
     /// </summary>
     /// <remarks>
     /// Creado: 2026-10-09
     /// Modificado: 2026-10-09 - Versión inicial (RF-002)
+    /// Modificado: 2026-10-10 - Agrega Categoria (RF-005)
     /// </remarks>
     private sealed record FilaEstadoDeFlujo(int FlujoId, int EstadoId, string Nombre, bool Activo, int Orden,
-        bool EsInicial, bool EsFinal);
+        bool EsInicial, bool EsFinal, string? Categoria);
 
     /// <summary>
     /// Tipo que usa un flujo.

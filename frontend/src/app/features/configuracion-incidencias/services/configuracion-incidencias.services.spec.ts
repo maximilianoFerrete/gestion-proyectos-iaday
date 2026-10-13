@@ -123,7 +123,7 @@ describe('Servicios de configuración de incidencias', () => {
     // RN-10, RN-11: listado y acciones
     it('usa las URLs de /api/estados-incidencia', () => {
       const servicio = TestBed.inject(EstadosIncidenciaService);
-      const request = { nombre: 'En revisión', descripcion: null, orden: 25 };
+      const request = { nombre: 'En revisión', descripcion: null, orden: 25, categoria: null };
 
       servicio.listar({ soloActivos: true }).subscribe();
       esperar('GET', '/api/estados-incidencia?soloActivos=true');

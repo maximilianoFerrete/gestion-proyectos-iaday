@@ -3,6 +3,7 @@ import {
   alternarId,
   construirArbol,
   idsConHijos,
+  idsExpandidosHastaNivel,
   idsExpandidosIniciales,
   numeroDesdeCodigo,
 } from './arbol-incidencias';
@@ -15,10 +16,11 @@ function nodo(id: number, numero: number, padreId: number | null): NodoArbolInci
     titulo: `Incidencia ${numero}`,
     padreId,
     tipo: { id: 1, nombre: 'Épica', activo: true, nivelNumero: 1 },
-    estado: { id: 1, nombre: 'Por hacer', activo: true, esFinal: false },
+    estado: { id: 1, nombre: 'Por hacer', activo: true, esFinal: false, categoria: null },
     prioridad: { id: 2, nombre: 'Media', orden: 20, activo: true },
     responsable: null,
     fechaVencimiento: null,
+    vencida: false,
     agrupacion: null,
   };
 }
@@ -97,5 +99,36 @@ describe('arbol-incidencias', () => {
 
     expect([...expandido].sort((a, b) => a - b)).toEqual([3, 15]);
     expect([...colapsado]).toEqual([15]);
+  });
+
+  describe('idsExpandidosHastaNivel (RF-005)', () => {
+    /** Nodo con el nivel del tipo indicado. */
+    function nodoNivel(id: number, padreId: number | null, nivel: number): NodoArbolIncidenciaDto {
+      const base = nodo(id, id, padreId);
+      return { ...base, tipo: { ...base.tipo, id: nivel, nivelNumero: nivel } };
+    }
+
+    /** Épica 3 (N1) → HU 15 (N2) → Subtarea 16 (N3); Épica 20 (N1) sin hijas. */
+    const ARBOL = construirArbol([
+      nodoNivel(3, null, 1),
+      nodoNivel(15, 3, 2),
+      nodoNivel(16, 15, 3),
+      nodoNivel(20, null, 1),
+    ]);
+
+    // RN-22, CA-27: hasta nivel 2 expande los nodos con hijos de nivel < 2 (solo la Épica)
+    it('con nivel 2 expande solo los nodos con hijos de nivel 1', () => {
+      expect([...idsExpandidosHastaNivel(ARBOL, 2)]).toEqual([3]);
+    });
+
+    // RN-22, CA-27: hasta nivel 3 expande Épica y HU (se ve todo)
+    it('con nivel 3 expande los nodos con hijos de nivel 1 y 2', () => {
+      expect([...idsExpandidosHastaNivel(ARBOL, 3)].sort((a, b) => a - b)).toEqual([3, 15]);
+    });
+
+    // RN-22: con nivel 1 no se expande ninguno
+    it('con nivel 1 devuelve un conjunto vacío', () => {
+      expect(idsExpandidosHastaNivel(ARBOL, 1).size).toBe(0);
+    });
   });
 });

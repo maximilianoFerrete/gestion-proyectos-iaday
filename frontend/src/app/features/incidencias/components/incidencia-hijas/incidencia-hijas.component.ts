@@ -5,10 +5,11 @@ import { IncidenciaReferenciaDto } from '../../models/incidencia.model';
 import { BadgeEstadoIncidenciaComponent } from '../badge-estado-incidencia/badge-estado-incidencia.component';
 
 /**
- * Sección Hijas del detalle de incidencia (I3): tabla con enlaces a cada hija directa.
+ * Sección Hijas del detalle de incidencia (I3): tabla con enlaces a cada hija directa; las
+ * vencidas (`vencida` de la API, RF-005 RN-36) con estilo de alerta.
  *
  * Creado: 2026-10-09
- * Modificado: 2026-10-09 - Creación inicial (RF-002)
+ * Modificado: 2026-10-10 - Alerta de vencida desde el servidor (RF-005)
  */
 @Component({
   selector: 'app-incidencia-hijas',
@@ -46,8 +47,11 @@ import { BadgeEstadoIncidenciaComponent } from '../badge-estado-incidencia/badge
                 <td>{{ hija.tipo.nombre }}</td>
                 <td><app-badge-estado-incidencia [estado]="hija.estado" /></td>
                 <td>{{ hija.responsable?.nombre ?? 'Sin responsable' }}</td>
-                <td>
+                <td [class.texto-alerta]="hija.vencida">
                   {{ hija.fechaVencimiento ? (hija.fechaVencimiento | date: 'dd/MM/yyyy') : '-' }}
+                  @if (hija.vencida) {
+                    <span class="sr-only">(vencida)</span>
+                  }
                 </td>
               </tr>
             }
